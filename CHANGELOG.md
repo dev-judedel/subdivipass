@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-11-09
+
+### Added
+- **Database Schema - Complete Implementation**
+  - Created subdivisions table with settings, logo, and status management
+  - Created gates table with location tracking and type classification
+  - Extended users table with subdivision assignments, gate assignments, and 2FA support
+  - Created pass_types table for configurable pass categories with approval workflows
+  - Created passes table (main entity) with:
+    - UUID and pass number for identification
+    - Complete visitor information fields
+    - QR code path and signature for security
+    - 6-digit PIN for manual validation
+    - Validity period tracking
+    - Multiple status states (draft, pending, approved, active, expired, revoked, rejected)
+    - Scan count and last scanned tracking
+  - Created pass_scans table for detailed scan event tracking with offline support
+  - Created pass_logs table for comprehensive audit trail
+  - Integrated Spatie Permission package (roles & permissions tables)
+  - Integrated Spatie Activity Log package (system-wide audit logging)
+
+### Changed
+- Updated TASKS.md to mark all database design tasks as completed
+- All tables include soft deletes for data retention
+- Comprehensive indexes added for optimal query performance
+- Foreign key constraints with appropriate cascade rules
+
+### Technical Details
+- **Total Tables Created:** 15
+- **Migration Status:** All migrations ran successfully
+- **Indexes:** Performance-optimized with composite and single-column indexes
+- **JSON Fields:** Used for flexible configuration and metadata
+- **Enums:** Controlled state management for status fields
+- **Soft Deletes:** Enabled on all core tables
+
 ## [0.1.0] - 2024-11-09
 
 ### Added

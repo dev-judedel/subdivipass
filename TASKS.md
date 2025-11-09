@@ -10,30 +10,30 @@
 ## 📌 MILESTONE 1: PROJECT FOUNDATION (Weeks 1-2)
 
 ### Environment Setup
-- `[TODO]` Install Laragon with PHP 8.2, MySQL 8.0, Redis
+- `[COMPLETED]` Install Laragon with PHP 8.1, MySQL 8.0, Redis - Date: 2024-11-09
 - `[TODO]` Configure VS Code with recommended extensions
-- `[TODO]` Set up Git repository and branching strategy
+- `[COMPLETED]` Set up Git repository and branching strategy - Date: 2024-11-09
 - `[TODO]` Create GitHub/GitLab project with issue tracking
-- `[TODO]` Configure .gitignore for Laravel project
-- `[TODO]` Set up project documentation structure
+- `[COMPLETED]` Configure .gitignore for Laravel project - Date: 2024-11-09
+- `[COMPLETED]` Set up project documentation structure - Date: 2024-11-09
 
 ### Laravel Project Initialization
-- `[TODO]` Create new Laravel 11.x project
-- `[TODO]` Configure .env file with database credentials
-- `[TODO]` Install core Composer dependencies:
-  - `[TODO]` Laravel Sanctum
-  - `[TODO]` Spatie Laravel Permission
-  - `[TODO]` Spatie Activity Log
-  - `[TODO]` Endroid QR Code
-  - `[TODO]` Predis for Redis
-- `[TODO]` Install NPM dependencies:
-  - `[TODO]` Vue.js 3.4
-  - `[TODO]` Inertia.js
-  - `[TODO]` Tailwind CSS
-  - `[TODO]` Vite configuration
-  - `[TODO]` @zxing/browser and @zxing/library
-- `[TODO]` Configure Vite for Vue and Inertia
-- `[TODO]` Set up Tailwind CSS with custom configuration
+- `[COMPLETED]` Create new Laravel 10.x project - Date: 2024-11-09
+- `[COMPLETED]` Configure .env file with database credentials - Date: 2024-11-09
+- `[COMPLETED]` Install core Composer dependencies: - Date: 2024-11-09
+  - `[COMPLETED]` Laravel Sanctum (included in Laravel 10)
+  - `[COMPLETED]` Spatie Laravel Permission (v6.23.0)
+  - `[COMPLETED]` Spatie Activity Log (v4.10.2)
+  - `[COMPLETED]` Endroid QR Code (v5.1.0)
+  - `[COMPLETED]` Predis for Redis (v3.2.0)
+- `[COMPLETED]` Install NPM dependencies: - Date: 2024-11-09
+  - `[COMPLETED]` Vue.js 3.4
+  - `[COMPLETED]` Inertia.js (server v2.0.10 & client)
+  - `[COMPLETED]` Tailwind CSS 3.x
+  - `[COMPLETED]` Vite configuration
+  - `[COMPLETED]` @zxing/browser and @zxing/library
+- `[COMPLETED]` Configure Vite for Vue and Inertia - Date: 2024-11-09
+- `[COMPLETED]` Set up Tailwind CSS with custom configuration - Date: 2024-11-09
 - `[TODO]` Create base layout templates
 
 ### Database Design

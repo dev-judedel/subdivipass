@@ -121,7 +121,7 @@ class PassController extends Controller
     {
         $this->authorize('view', $pass);
 
-        $pass->load(['type', 'subdivision', 'requester', 'approver', 'scans.gate', 'scans.guard']);
+        $pass->load(['type', 'subdivision', 'requester', 'approver', 'scans.gate', 'scans.scannedBy']);
 
         return Inertia::render('Passes/Show', [
             'pass' => $pass,

@@ -262,7 +262,7 @@
                                                     <span class="font-medium text-gray-900">{{ scan.gate?.name }}</span>
                                                 </p>
                                                 <p class="mt-0.5 text-xs text-gray-500">
-                                                    By {{ scan.guard?.name }} • {{ formatDate(scan.scanned_at) }}
+                                                    By {{ scan.scanned_by?.name }} • {{ formatDate(scan.scanned_at) }}
                                                 </p>
                                             </div>
                                         </div>

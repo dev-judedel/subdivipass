@@ -233,15 +233,15 @@
 - `[TODO]` Create scan timeout handling
 
 ### Guard Interface Features
-- `[TODO]` Build guard-specific layout
-- `[TODO]` Create guard dashboard
-- `[TODO]` Implement quick scan button
-- `[TODO]` Add manual PIN entry form
-- `[TODO]` Create pass validation display
-- `[TODO]` Show visitor details after scan
+- `[COMPLETED]` Build guard-specific layout - Date: 2025-11-10
+- `[COMPLETED]` Create guard dashboard (scanner page) - Date: 2025-11-10
+- `[COMPLETED]` Implement quick scan button - Date: 2025-11-10
+- `[COMPLETED]` Add manual PIN entry form - Date: 2025-11-10
+- `[COMPLETED]` Create pass validation display - Date: 2025-11-10
+- `[COMPLETED]` Show visitor details after scan - Date: 2025-11-10
 - `[TODO]` Add approval/rejection buttons
 - `[TODO]` Create issue reporting form
-- `[TODO]` Implement recent scans list
+- `[COMPLETED]` Implement recent scans list - Date: 2025-11-10
 - `[TODO]` Add shift start/end functionality
 - `[TODO]` Create emergency alert button
 - `[TODO]` Build guard statistics view

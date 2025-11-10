@@ -117,11 +117,11 @@ A mobile-first PWA that enables:
 - Gate configuration
 
 ### Phase 4: Guard Interface (Weeks 5-7)
-- PWA setup
-- QR scanner implementation
-- Pass validation engine
-- Offline functionality
-- Manual PIN validation
+- PWA setup *(in progress – base guard layout built, PWA wrappers pending)*
+- QR scanner implementation ✅ Guard scanner page with validation workflow
+- Pass validation engine ✅ Server-side evaluation + scan logging
+- Offline functionality *(planned)*
+- Manual PIN validation ✅ Manual entry fallback in scanner UI
 
 ### Phase 5: Admin Dashboard (Weeks 7-9)
 - Dashboard components

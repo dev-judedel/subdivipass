@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\GuardScannerController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -37,9 +38,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Guard routes
     Route::prefix('guard')->middleware('role:guard')->group(function () {
-        Route::get('/scanner', function () {
-            return Inertia::render('Guard/Scanner');
-        })->name('guard.scanner');
+        Route::get('/scanner', [GuardScannerController::class, 'index'])->name('guard.scanner');
+        Route::post('/scans', [GuardScannerController::class, 'store'])->name('guard.scans.store');
     });
 
     // Employee/Admin routes - Pass Management

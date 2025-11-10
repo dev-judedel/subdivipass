@@ -98,6 +98,7 @@
 - `[COMPLETED]` Build user detail/show page (full Vue component) - Date: 2025-11-10
 - `[COMPLETED]` Create user edit/update form (full Vue component) - Date: 2025-11-10
 - `[COMPLETED]` Align user index action buttons with Passes UI - Date: 2025-11-10
+- `[COMPLETED]` Add icon buttons to Users/Roles lists for consistent UX - Date: 2025-11-10
 - `[TODO]` Add bulk user import (CSV)
 - `[TODO]` Create user profile page
 - `[TODO]` Implement password change functionality (user self-service)
@@ -326,9 +327,9 @@
 - `[COMPLETED]` Build role management interface (full UI) - Date: 2025-11-10
 - `[TODO]` Create permission assignment UI
 - `[TODO]` Add bulk user operations (bulk delete, bulk activate, etc.)
-- `[TODO]` Create activity logs viewer (dedicated page)
+- `[COMPLETED]` Create activity logs viewer (dedicated page) - Date: 2025-11-10
 - `[TODO]` Add user statistics dashboard
-- `[TODO]` Build access control matrix UI
+- `[COMPLETED]` Build access control matrix UI - Date: 2025-11-10
 
 ---
 

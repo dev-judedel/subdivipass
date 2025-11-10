@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateRoleRequest;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -21,8 +22,11 @@ class RoleController extends Controller
             ->orderBy('name')
             ->paginate(15);
 
+        $permissions = Permission::orderBy('name')->get();
+
         return Inertia::render('Roles/Index', [
             'roles' => $roles,
+            'permissions' => $permissions,
         ]);
     }
 
@@ -95,5 +99,20 @@ class RoleController extends Controller
 
         return redirect()->route('roles.index')
             ->with('success', 'Role deleted successfully.');
+    }
+
+    public function activity(): Response
+    {
+        $this->authorize('viewAny', Role::class);
+
+        $logs = Activity::query()
+            ->with(['causer', 'subject'])
+            ->where('subject_type', Role::class)
+            ->latest()
+            ->paginate(20);
+
+        return Inertia::render('Roles/Activity', [
+            'logs' => $logs,
+        ]);
     }
 }

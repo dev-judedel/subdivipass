@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-11-10
+
+### Fixed
+- **Database Schema Consistency Issues**
+  - Fixed `type_id` vs `pass_type_id` column name inconsistency
+    - Updated Pass model: Changed fillable array and type() relationship from `type_id` to `pass_type_id`
+    - Updated PassController: Fixed query filtering to use `pass_type_id`
+    - Updated StorePassRequest: Fixed validation rules and attributes
+    - Updated PassService: Fixed pass creation logic to use correct column name
+    - Updated Create.vue: Fixed 7 references (form v-model, errors, initialization, computed, reset)
+    - Updated Index.vue: Fixed 4 references (filter v-model, initialization, active filters, clear filters)
+    - Rebuilt frontend assets after fixes
+    - Resolves: "Column not found: 1054 Unknown column 'type_id' in 'field list'" error
+
+  - **Database Column Renames** - Aligned with code conventions
+    - Created migration: `2025_11_10_023836_rename_visitor_phone_to_visitor_contact_in_passes_table`
+      - Renamed `visitor_phone` → `visitor_contact`
+      - Migration executed successfully (77ms)
+    - Created migration: `2025_11_10_024023_rename_vehicle_plate_number_to_vehicle_plate_in_passes_table`
+      - Renamed `vehicle_plate_number` → `vehicle_plate`
+      - Migration executed successfully (45ms)
+
+  - **Database Column Constraints**
+    - Created migration: `2025_11_10_025457_make_qr_signature_nullable_in_passes_table`
+      - Made `qr_signature` column nullable
+      - Migration executed successfully (102ms)
+      - Resolves: "Field 'qr_signature' doesn't have a default value" error
+      - Allows pass creation to proceed before QR code generation
+
+### Technical Details
+- **Files Modified:** 6 backend files + 2 Vue components
+- **Migrations Created:** 3 database migrations
+- **Frontend Build:** Assets rebuilt successfully in 5.81s
+- **Column Mapping:**
+  - `type_id` → `pass_type_id` (consistency with database schema)
+  - `visitor_phone` → `visitor_contact` (naming convention)
+  - `vehicle_plate_number` → `vehicle_plate` (shorter, clearer)
+  - `qr_signature` → nullable (lifecycle requirement)
+
+### Impact
+- **Pass Creation:** Now works correctly without column errors
+- **QR Code Generation:** Can be generated after pass creation (async workflow)
+- **Code Consistency:** All references now match database schema
+- **Migration Safety:** All migrations are reversible with proper down() methods
+
+### Testing Performed
+- Verified database column existence via tinker
+- Confirmed no references to old column names in codebase
+- Frontend assets rebuilt without errors
+- Database schema verified after each migration
+
 ## [0.8.0] - 2024-11-10
 
 ### Added

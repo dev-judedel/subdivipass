@@ -668,7 +668,25 @@
 
 _This section will be populated as new tasks are discovered during development_
 
-- `[TODO]` _(Add new tasks here as they are identified)_
+### Database Schema Fixes (Discovered during pass creation testing)
+- `[COMPLETED]` Fix type_id vs pass_type_id column name inconsistency - Date: 2024-11-10
+  - Updated Pass.php model (fillable and relationship)
+  - Updated PassController.php (query filtering)
+  - Updated StorePassRequest.php (validation rules)
+  - Updated PassService.php (pass creation)
+  - Updated Create.vue (7 references: form, errors, computed, methods)
+  - Updated Index.vue (4 references: filter form, computed, methods)
+  - Rebuilt frontend assets
+- `[COMPLETED]` Rename visitor_phone to visitor_contact in passes table - Date: 2024-11-10
+  - Created migration: 2025_11_10_023836_rename_visitor_phone_to_visitor_contact_in_passes_table
+  - Verified no code references to old column name
+- `[COMPLETED]` Rename vehicle_plate_number to vehicle_plate in passes table - Date: 2024-11-10
+  - Created migration: 2025_11_10_024023_rename_vehicle_plate_number_to_vehicle_plate_in_passes_table
+  - Verified no code references to old column name
+- `[COMPLETED]` Make qr_signature column nullable in passes table - Date: 2024-11-10
+  - Created migration: 2025_11_10_025457_make_qr_signature_nullable_in_passes_table
+  - Allows pass creation before QR code generation
+  - Resolves "Field doesn't have a default value" error
 
 ---
 
@@ -688,10 +706,10 @@ _Move completed tasks here with completion date_
 
 ---
 
-**Last Updated:** November 2024  
-**Total Tasks:** 400+  
-**Completed:** 0  
-**In Progress:** 0  
+**Last Updated:** November 10, 2024
+**Total Tasks:** 404+
+**Completed:** 108 (including 4 newly discovered schema fixes)
+**In Progress:** 0
 **Blocked:** 0
 
 ---

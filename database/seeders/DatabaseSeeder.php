@@ -12,11 +12,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        $this->command->info('Starting database seeding...');
 
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // Seed in specific order due to dependencies
+        $this->call([
+            RolePermissionSeeder::class,     // 1. Create roles and permissions first
+            SubdivisionSeeder::class,        // 2. Create subdivisions
+            GateSeeder::class,               // 3. Create gates (depends on subdivisions)
+            PassTypeSeeder::class,           // 4. Create pass types (depends on subdivisions)
+            UserSeeder::class,               // 5. Create users (depends on roles and subdivisions)
+        ]);
+
+        $this->command->info('Database seeding completed successfully!');
+        $this->command->line('');
+        $this->command->info('Test Credentials:');
+        $this->command->line('Super Admin: admin@subdivipass.com / password');
+        $this->command->line('Admin: john.smith@greenfieldheights.com / password');
+        $this->command->line('Employee: anna.rodriguez@greenfieldheights.com / password');
+        $this->command->line('Guard: pedro.cruz@greenfieldheights.com / password');
+        $this->command->line('Requester: sofia.fernandez@gmail.com / password');
     }
 }

@@ -18,7 +18,8 @@ return new class extends Migration
             $table->json('gate_ids')->nullable()->after('primary_subdivision_id'); // For guards - assigned gates
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active')->after('gate_ids');
             $table->timestamp('last_login_at')->nullable()->after('status');
-            $table->string('avatar_path')->nullable()->after('last_login_at');
+            $table->string('last_login_ip')->nullable()->after('last_login_at');
+            $table->string('avatar_path')->nullable()->after('last_login_ip');
             $table->boolean('two_factor_enabled')->default(false)->after('avatar_path');
             $table->text('two_factor_secret')->nullable()->after('two_factor_enabled');
             $table->softDeletes();
@@ -47,6 +48,7 @@ return new class extends Migration
                 'gate_ids',
                 'status',
                 'last_login_at',
+                'last_login_ip',
                 'avatar_path',
                 'two_factor_enabled',
                 'two_factor_secret',

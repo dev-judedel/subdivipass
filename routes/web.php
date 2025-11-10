@@ -40,6 +40,9 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('guard')->middleware('role:guard')->group(function () {
         Route::get('/scanner', [GuardScannerController::class, 'index'])->name('guard.scanner');
         Route::post('/scans', [GuardScannerController::class, 'store'])->name('guard.scans.store');
+        Route::post('/shifts/start', [GuardScannerController::class, 'startShift'])->name('guard.shifts.start');
+        Route::post('/shifts/end', [GuardScannerController::class, 'endShift'])->name('guard.shifts.end');
+        Route::post('/issues', [GuardScannerController::class, 'reportIssue'])->name('guard.issues.store');
     });
 
     // Employee/Admin routes - Pass Management

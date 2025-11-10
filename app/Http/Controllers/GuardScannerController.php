@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GuardIssueReportRequest;
 use App\Http\Requests\GuardScanRequest;
+use App\Http\Requests\GuardShiftRequest;
 use App\Models\Gate;
+use App\Models\GuardIssueReport;
+use App\Models\GuardShift;
 use App\Models\Pass;
 use App\Models\PassScan;
 use Illuminate\Http\RedirectResponse;
@@ -27,16 +31,26 @@ class GuardScannerController extends Controller
         $recentScans = PassScan::with([
                 'pass:id,pass_number,visitor_name,status,valid_to',
                 'gate:id,name',
+                'scannedBy:id,name',
             ])
             ->where('guard_id', $guard->id)
             ->latest('scanned_at')
             ->limit(10)
             ->get();
 
+        $currentShift = GuardShift::with('gate:id,name')
+            ->where('guard_id', $guard->id)
+            ->active()
+            ->latest('started_at')
+            ->first();
+
         return Inertia::render('Guard/Scanner', [
             'gates' => $gates,
             'defaultGateId' => $gates->first()->id ?? null,
             'recentScans' => $recentScans,
+            'currentShift' => $currentShift,
+            'issueTypes' => $this->issueTypes(),
+            'issueSeverities' => ['low', 'medium', 'high'],
         ]);
     }
 
@@ -75,7 +89,7 @@ class GuardScannerController extends Controller
             'ip_address' => $request->ip(),
             'user_agent' => $request->header('User-Agent'),
             'location' => null,
-            'was_offline' => false,
+            'was_offline' => filter_var($request->input('was_offline', false), FILTER_VALIDATE_BOOLEAN),
             'scanned_at' => now(),
         ]);
 
@@ -98,6 +112,94 @@ class GuardScannerController extends Controller
                     'name' => $gate->name,
                 ],
             ]));
+    }
+
+    public function startShift(GuardShiftRequest $request): RedirectResponse
+    {
+        $guard = $request->user();
+
+        $existing = GuardShift::where('guard_id', $guard->id)
+            ->active()
+            ->first();
+
+        if ($existing) {
+            return redirect()
+                ->route('guard.scanner')
+                ->with('shiftStatus', [
+                    'status' => 'warning',
+                    'message' => 'You already have an active shift.',
+                ]);
+        }
+
+        GuardShift::create([
+            'guard_id' => $guard->id,
+            'gate_id' => $request->gate_id,
+            'notes' => $request->notes,
+            'status' => 'active',
+            'started_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('shiftStatus', [
+                'status' => 'success',
+                'message' => 'Shift started.',
+            ]);
+    }
+
+    public function endShift(Request $request): RedirectResponse
+    {
+        $guard = $request->user();
+
+        $shift = GuardShift::where('guard_id', $guard->id)
+            ->active()
+            ->latest('started_at')
+            ->first();
+
+        if (!$shift) {
+            return redirect()
+                ->route('guard.scanner')
+                ->with('shiftStatus', [
+                    'status' => 'error',
+                    'message' => 'No active shift found.',
+                ]);
+        }
+
+        $shift->update([
+            'status' => 'completed',
+            'ended_at' => now(),
+            'notes' => $request->input('notes'),
+        ]);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('shiftStatus', [
+                'status' => 'success',
+                'message' => 'Shift ended.',
+            ]);
+    }
+
+    public function reportIssue(GuardIssueReportRequest $request): RedirectResponse
+    {
+        $guard = $request->user();
+        $data = $request->validated();
+
+        GuardIssueReport::create([
+            'guard_id' => $guard->id,
+            'gate_id' => $data['gate_id'] ?? null,
+            'pass_id' => $this->resolvePassId($data['pass_code'] ?? null),
+            'issue_type' => $data['issue_type'],
+            'severity' => $data['severity'],
+            'description' => $data['description'],
+            'status' => 'open',
+        ]);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('issueStatus', [
+                'status' => 'success',
+                'message' => 'Issue reported. Security will review shortly.',
+            ]);
     }
 
     protected function findPass(string $method, string $code): ?Pass
@@ -147,6 +249,20 @@ class GuardScannerController extends Controller
         ];
     }
 
+    protected function resolvePassId(?string $code): ?int
+    {
+        if (blank($code)) {
+            return null;
+        }
+
+        $pass = Pass::where('pass_number', $code)
+            ->orWhere('pin', $code)
+            ->orWhere('uuid', $code)
+            ->first();
+
+        return $pass?->id;
+    }
+
     protected function ensureGateAssignment(int $gateId, $assignedGateIds): void
     {
         $ids = $this->parseIds($assignedGateIds);
@@ -175,5 +291,16 @@ class GuardScannerController extends Controller
             'error' => 'failed',
             default => 'success',
         };
+    }
+
+    protected function issueTypes(): array
+    {
+        return [
+            'suspicious_activity',
+            'unauthorized_entry',
+            'equipment_issue',
+            'medical_assistance',
+            'other',
+        ];
     }
 }

@@ -221,16 +221,16 @@
 - `[TODO]` Test PWA installation on devices
 
 ### QR Scanner Implementation
-- `[TODO]` Integrate ZXing-js library
-- `[TODO]` Create scanner component (Vue)
-- `[TODO]` Implement camera permission handling
-- `[TODO]` Add camera selection (front/back)
-- `[TODO]` Implement torch/flashlight control
-- `[TODO]` Create scan result handler
-- `[TODO]` Add scan success/failure feedback
-- `[TODO]` Implement continuous scanning mode
-- `[TODO]` Add scan history locally
-- `[TODO]` Create scan timeout handling
+- `[COMPLETED]` Integrate ZXing-js library - Date: 2025-11-10
+- `[COMPLETED]` Create scanner component (Vue) - Date: 2025-11-10
+- `[COMPLETED]` Implement camera permission handling - Date: 2025-11-10
+- `[COMPLETED]` Add camera selection (front/back) - Date: 2025-11-10
+- `[COMPLETED]` Implement torch/flashlight control - Date: 2025-11-10
+- `[COMPLETED]` Create scan result handler - Date: 2025-11-10
+- `[COMPLETED]` Add scan success/failure feedback - Date: 2025-11-10
+- `[COMPLETED]` Implement continuous scanning mode - Date: 2025-11-10
+- `[COMPLETED]` Add scan history locally - Date: 2025-11-10
+- `[COMPLETED]` Create scan timeout handling - Date: 2025-11-10
 
 ### Guard Interface Features
 - `[COMPLETED]` Build guard-specific layout - Date: 2025-11-10
@@ -240,9 +240,9 @@
 - `[COMPLETED]` Create pass validation display - Date: 2025-11-10
 - `[COMPLETED]` Show visitor details after scan - Date: 2025-11-10
 - `[TODO]` Add approval/rejection buttons
-- `[TODO]` Create issue reporting form
+- `[COMPLETED]` Create issue reporting form - Date: 2025-11-10
 - `[COMPLETED]` Implement recent scans list - Date: 2025-11-10
-- `[TODO]` Add shift start/end functionality
+- `[COMPLETED]` Add shift start/end functionality - Date: 2025-11-10
 - `[TODO]` Create emergency alert button
 - `[TODO]` Build guard statistics view
 
@@ -250,11 +250,11 @@
 - `[TODO]` Implement IndexedDB for local storage
 - `[TODO]` Cache last 100 valid passes
 - `[TODO]` Create offline validation logic
-- `[TODO]` Queue offline scans for sync
-- `[TODO]` Implement sync when online
+- `[COMPLETED]` Queue offline scans for sync - Date: 2025-11-10
+- `[COMPLETED]` Implement sync when online - Date: 2025-11-10
 - `[TODO]` Handle conflicts resolution
-- `[TODO]` Add offline mode indicator
-- `[TODO]` Create data sync status
+- `[COMPLETED]` Add offline mode indicator - Date: 2025-11-10
+- `[COMPLETED]` Create data sync status (pending queue counter) - Date: 2025-11-10
 
 ---
 

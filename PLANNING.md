@@ -118,9 +118,9 @@ A mobile-first PWA that enables:
 
 ### Phase 4: Guard Interface (Weeks 5-7)
 - PWA setup *(in progress – base guard layout built, PWA wrappers pending)*
-- QR scanner implementation ✅ Guard scanner page with validation workflow
+- QR scanner implementation ✅ Guard scanner page with ZXing camera capture + manual fallback
 - Pass validation engine ✅ Server-side evaluation + scan logging
-- Offline functionality *(planned)*
+- Offline functionality *(partial – offline indicator and queued sync implemented; caching/IndexedDB pending)*
 - Manual PIN validation ✅ Manual entry fallback in scanner UI
 
 ### Phase 5: Admin Dashboard (Weeks 7-9)

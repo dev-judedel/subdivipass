@@ -65,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin routes - User Management
     Route::middleware('role:admin|super-admin')->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);
+        Route::resource('roles', \App\Http\Controllers\RoleController::class)->except(['show']);
 
         // Additional user actions
         Route::post('users/{user}/change-status', [\App\Http\Controllers\UserController::class, 'changeStatus'])

@@ -426,6 +426,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+
+defineOptions({ layout: DashboardLayout });
 
 // Props
 const props = defineProps({

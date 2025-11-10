@@ -226,6 +226,9 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+
+defineOptions({ layout: DashboardLayout });
 
 const props = defineProps({
     subdivisions: Array,

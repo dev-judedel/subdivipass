@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Spatie\Activitylog\Models\Activity;
 
 class UserController extends Controller
 {
@@ -119,24 +120,20 @@ class UserController extends Controller
 
         // Get subdivisions if user has any assigned
         $subdivisions = [];
-        if ($user->subdivision_ids) {
-            $subdivisionIds = json_decode($user->subdivision_ids, true) ?? [];
-            if (!empty($subdivisionIds)) {
-                $subdivisions = Subdivision::whereIn('id', $subdivisionIds)->get();
-            }
+        $subdivisionIds = is_array($user->subdivision_ids) ? $user->subdivision_ids : [];
+        if (!empty($subdivisionIds)) {
+            $subdivisions = Subdivision::whereIn('id', $subdivisionIds)->get();
         }
 
         // Get gates if user has any assigned (for guards)
         $gates = [];
-        if ($user->gate_ids) {
-            $gateIds = json_decode($user->gate_ids, true) ?? [];
-            if (!empty($gateIds)) {
-                $gates = Gate::with('subdivision')->whereIn('id', $gateIds)->get();
-            }
+        $gateIds = is_array($user->gate_ids) ? $user->gate_ids : [];
+        if (!empty($gateIds)) {
+            $gates = Gate::with('subdivision')->whereIn('id', $gateIds)->get();
         }
 
         // Get activity logs
-        $activityLogs = activity()
+        $activityLogs = Activity::query()
             ->causedBy($user)
             ->latest()
             ->limit(10)

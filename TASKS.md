@@ -94,9 +94,10 @@
 - `[COMPLETED]` Create subdivision assignment for users - Date: 2024-11-10
 - `[COMPLETED]` Create gate assignment for guards - Date: 2024-11-10
 - `[COMPLETED]` Fix last_login_ip column missing error - Date: 2024-11-10
-- `[TODO]` Build user registration form (full Vue component)
-- `[TODO]` Build user detail/show page (full Vue component)
-- `[TODO]` Create user edit/update form (full Vue component)
+- `[COMPLETED]` Build user registration form (full Vue component) - Date: 2025-11-10
+- `[COMPLETED]` Build user detail/show page (full Vue component) - Date: 2025-11-10
+- `[COMPLETED]` Create user edit/update form (full Vue component) - Date: 2025-11-10
+- `[COMPLETED]` Align user index action buttons with Passes UI - Date: 2025-11-10
 - `[TODO]` Add bulk user import (CSV)
 - `[TODO]` Create user profile page
 - `[TODO]` Implement password change functionality (user self-service)
@@ -322,7 +323,7 @@
 ### User & Role Management
 - `[COMPLETED]` Implement user search and filtering - Date: 2024-11-10
 - `[COMPLETED]` Create activity logs tracking (Spatie Activity Log) - Date: 2024-11-10
-- `[TODO]` Build role management interface (full UI)
+- `[COMPLETED]` Build role management interface (full UI) - Date: 2025-11-10
 - `[TODO]` Create permission assignment UI
 - `[TODO]` Add bulk user operations (bulk delete, bulk activate, etc.)
 - `[TODO]` Create activity logs viewer (dedicated page)

@@ -219,6 +219,9 @@
 <script setup>
 import { ref, reactive } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+
+defineOptions({ layout: DashboardLayout });
 
 const props = defineProps({
     passTypes: Object,

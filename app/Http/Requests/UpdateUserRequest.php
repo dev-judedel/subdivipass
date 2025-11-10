@@ -66,22 +66,4 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        // Convert subdivision_ids and gate_ids to JSON if they are arrays
-        if ($this->has('subdivision_ids') && is_array($this->subdivision_ids)) {
-            $this->merge([
-                'subdivision_ids' => json_encode($this->subdivision_ids),
-            ]);
-        }
-
-        if ($this->has('gate_ids') && is_array($this->gate_ids)) {
-            $this->merge([
-                'gate_ids' => json_encode($this->gate_ids),
-            ]);
-        }
-    }
 }

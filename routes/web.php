@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\GuardIssueReportController;
 use App\Http\Controllers\GuardScannerController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,6 +22,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/', function () {
         return redirect('/login');
     });
+
+    Route::get('/home', function () {
+        return redirect()->route('dashboard');
+    })->name('home');
 
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store']);
@@ -43,6 +48,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/shifts/start', [GuardScannerController::class, 'startShift'])->name('guard.shifts.start');
         Route::post('/shifts/end', [GuardScannerController::class, 'endShift'])->name('guard.shifts.end');
         Route::post('/issues', [GuardScannerController::class, 'reportIssue'])->name('guard.issues.store');
+        Route::post('/passes/{pass}/approve', [GuardScannerController::class, 'approvePass'])->name('guard.passes.approve');
+        Route::post('/passes/{pass}/reject', [GuardScannerController::class, 'rejectPass'])->name('guard.passes.reject');
     });
 
     // Employee/Admin routes - Pass Management
@@ -70,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);
         Route::resource('roles', \App\Http\Controllers\RoleController::class)->except(['show']);
         Route::get('roles/activity', [\App\Http\Controllers\RoleController::class, 'activity'])->name('roles.activity');
+        Route::resource('guard-issues', GuardIssueReportController::class)->only(['index', 'show', 'update']);
 
         // Additional user actions
         Route::post('users/{user}/change-status', [\App\Http\Controllers\UserController::class, 'changeStatus'])

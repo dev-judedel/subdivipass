@@ -10,6 +10,7 @@ use App\Models\GuardIssueReport;
 use App\Models\GuardShift;
 use App\Models\Pass;
 use App\Models\PassScan;
+use App\Services\PassService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +18,10 @@ use Inertia\Response;
 
 class GuardScannerController extends Controller
 {
+    public function __construct(private PassService $passService)
+    {
+    }
+
     public function index(Request $request): Response
     {
         $guard = $request->user();
@@ -54,6 +59,8 @@ class GuardScannerController extends Controller
             'issueTypes' => $this->issueTypes(),
             'issueSeverities' => ['low', 'medium', 'high'],
             'stats' => $stats,
+            'canApprove' => $guard->can('approve passes'),
+            'canReject' => $guard->can('reject passes'),
         ]);
     }
 
@@ -204,6 +211,40 @@ class GuardScannerController extends Controller
             ->with('issueStatus', [
                 'status' => 'success',
                 'message' => 'Issue reported. Security will review shortly.',
+            ]);
+    }
+
+    public function approvePass(Request $request, Pass $pass): RedirectResponse
+    {
+        $guard = $request->user();
+        abort_unless($guard->can('approve passes'), 403);
+
+        $this->passService->approvePass($pass, $guard);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('passActionStatus', [
+                'status' => 'success',
+                'message' => 'Pass approved successfully.',
+            ]);
+    }
+
+    public function rejectPass(Request $request, Pass $pass): RedirectResponse
+    {
+        $guard = $request->user();
+        abort_unless($guard->can('reject passes'), 403);
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $this->passService->rejectPass($pass, $guard, $data['reason']);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('passActionStatus', [
+                'status' => 'warning',
+                'message' => 'Pass rejected.',
             ]);
     }
 

@@ -239,12 +239,12 @@
 - `[COMPLETED]` Add manual PIN entry form - Date: 2025-11-10
 - `[COMPLETED]` Create pass validation display - Date: 2025-11-10
 - `[COMPLETED]` Show visitor details after scan - Date: 2025-11-10
-- `[TODO]` Add approval/rejection buttons
+- `[COMPLETED]` Add approval/rejection buttons - Date: 2025-11-10
 - `[COMPLETED]` Create issue reporting form - Date: 2025-11-10
 - `[COMPLETED]` Implement recent scans list - Date: 2025-11-10
 - `[COMPLETED]` Add shift start/end functionality - Date: 2025-11-10
 - `[COMPLETED]` Create emergency alert button - Date: 2025-11-10
-- `[TODO]` Build guard statistics view
+- `[COMPLETED]` Build guard statistics view - Date: 2025-11-10
 
 ### Offline Functionality
 - `[COMPLETED]` Implement IndexedDB for local storage - Date: 2025-11-10
@@ -252,9 +252,12 @@
 - `[COMPLETED]` Create offline validation logic - Date: 2025-11-10
 - `[COMPLETED]` Queue offline scans for sync - Date: 2025-11-10
 - `[COMPLETED]` Implement sync when online - Date: 2025-11-10
-- `[TODO]` Handle conflicts resolution
+- `[COMPLETED]` Handle conflicts resolution - Date: 2025-11-10
 - `[COMPLETED]` Add offline mode indicator - Date: 2025-11-10
 - `[COMPLETED]` Create data sync status (pending queue counter) - Date: 2025-11-10
+
+### Security & Monitoring
+- `[COMPLETED]` Build guard issue admin dashboard - Date: 2025-11-10
 
 ---
 

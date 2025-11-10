@@ -18,6 +18,7 @@ class GuardIssueReport extends Model
         'description',
         'status',
         'resolved_at',
+        'resolution_notes',
     ];
 
     protected $casts = [

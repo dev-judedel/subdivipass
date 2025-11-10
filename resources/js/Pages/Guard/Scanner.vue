@@ -368,6 +368,43 @@
                         </div>
                     </div>
                 </div>
+
+                <div v-if="showApprovalControls" class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-semibold text-white">Pass Actions</p>
+                        <p class="text-xs text-slate-400">Requires approval permissions</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <button
+                            v-if="canApprove"
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-xl bg-green-500/80 px-4 py-2 text-sm font-semibold hover:bg-green-500 disabled:opacity-50"
+                            :disabled="approveForm.processing"
+                            @click="approvePass"
+                        >
+                            Approve Pass
+                        </button>
+                        <div v-if="canReject" class="flex flex-wrap gap-2 items-center">
+                            <input
+                                v-model="rejectForm.reason"
+                                type="text"
+                                class="rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm min-w-[200px]"
+                                placeholder="Rejection reason"
+                            />
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-xl bg-red-500/80 px-4 py-2 text-sm font-semibold hover:bg-red-500 disabled:opacity-50"
+                                :disabled="rejectForm.processing || !rejectForm.reason"
+                                @click="rejectPass"
+                            >
+                                Reject Pass
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="passActionStatus" class="text-xs" :class="statusClass(passActionStatus.status)">
+                        {{ passActionStatus.message }}
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -422,12 +459,15 @@ const props = defineProps({
     issueTypes: { type: Array, default: () => [] },
     issueSeverities: { type: Array, default: () => ['low', 'medium', 'high'] },
     stats: { type: Object, default: () => ({}) },
+    canApprove: { type: Boolean, default: false },
+    canReject: { type: Boolean, default: false },
 });
 
 const page = usePage();
 const scanResult = computed(() => page.props.flash?.scanResult ?? null);
 const shiftStatus = computed(() => page.props.flash?.shiftStatus ?? null);
 const issueStatus = computed(() => page.props.flash?.issueStatus ?? null);
+const passActionStatus = computed(() => page.props.flash?.passActionStatus ?? null);
 const stats = computed(() => ({
     total_today: props.stats?.total_today ?? 0,
     success: props.stats?.success ?? 0,
@@ -435,6 +475,9 @@ const stats = computed(() => ({
     failed: props.stats?.failed ?? 0,
 }));
 const supportsIndexedDb = isIndexedDbSupported();
+const canApprove = computed(() => props.canApprove);
+const canReject = computed(() => props.canReject);
+const showApprovalControls = computed(() => (canApprove.value || canReject.value) && scanResult.value?.pass);
 
 const storedDeviceId =
     (typeof window !== 'undefined' && window.localStorage.getItem('guardDeviceId')) ||
@@ -468,6 +511,11 @@ const issueForm = useForm({
     issue_type: props.issueTypes[0] || 'other',
     severity: 'low',
     description: '',
+});
+
+const approveForm = useForm({});
+const rejectForm = useForm({
+    reason: '',
 });
 watch(
     () => props.defaultGateId,
@@ -598,11 +646,18 @@ const flushOfflineScans = async () => {
             offlineQueue.value.shift();
             saveOfflineQueue();
         } catch (error) {
+            offlineQueue.value.shift();
+            saveOfflineQueue();
+            const message = error.response?.data?.message || 'Unable to sync queued scans right now.';
             localAlert.value = {
                 class: 'text-red-300',
-                message: 'Unable to sync queued scans right now.',
+                message,
             };
-            break;
+            addToLocalHistory({
+                pass_number: payload.code,
+                result: 'failed',
+                scanned_at: new Date().toISOString(),
+            });
         }
     }
 };
@@ -683,6 +738,25 @@ const sendEmergencyAlert = () => {
         issueForm.description = 'Emergency alert triggered at gate.';
     }
     submitIssue();
+};
+
+const approvePass = () => {
+    if (!scanResult.value?.pass || !canApprove.value) {
+        return;
+    }
+    approveForm.post(route('guard.passes.approve', scanResult.value.pass.id), {
+        preserveScroll: true,
+    });
+};
+
+const rejectPass = () => {
+    if (!scanResult.value?.pass || !canReject.value || !rejectForm.reason) {
+        return;
+    }
+    rejectForm.post(route('guard.passes.reject', scanResult.value.pass.id), {
+        preserveScroll: true,
+        onSuccess: () => rejectForm.reset('reason'),
+    });
 };
 const videoRef = ref(null);
 const codeReader = new BrowserMultiFormatReader();
@@ -813,10 +887,12 @@ watch(
             });
 
             if (supportsIndexedDb) {
-                await cachePass(value.pass, [value.input_code]);
+                await cachePass(value.pass, [value.input_code, value.pass.pass_number, value.pass.uuid]);
                 await trimCachedPasses(100);
             }
         }
+
+        rejectForm.reset('reason');
     }
 );
 

@@ -334,9 +334,39 @@
                     >
                         Submit Report
                     </button>
+                    <button
+                        type="button"
+                        class="w-full rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+                        :disabled="issueForm.processing"
+                        @click="sendEmergencyAlert"
+                    >
+                        Emergency Alert
+                    </button>
                     <p v-if="issueStatus" class="text-xs" :class="statusClass(issueStatus.status)">
                         {{ issueStatus.message }}
                     </p>
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                    <p class="text-xs uppercase tracking-wide text-slate-400 mb-4">Today’s Activity</p>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                            <p class="text-2xl font-bold text-white">{{ stats.total_today }}</p>
+                            <p class="text-xs text-slate-400 mt-1">Total Scans</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                            <p class="text-2xl font-bold text-green-300">{{ stats.success }}</p>
+                            <p class="text-xs text-slate-400 mt-1">Success</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                            <p class="text-2xl font-bold text-yellow-300">{{ stats.warnings }}</p>
+                            <p class="text-xs text-slate-400 mt-1">Warnings</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                            <p class="text-2xl font-bold text-red-300">{{ stats.failed }}</p>
+                            <p class="text-xs text-slate-400 mt-1">Failed</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -380,6 +410,7 @@ import axios from 'axios';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import GuardLayout from '@/Layouts/GuardLayout.vue';
+import { cachePass, getCachedPass, trimCachedPasses, isIndexedDbSupported } from '@/utils/indexedDb';
 
 defineOptions({ layout: GuardLayout });
 
@@ -390,12 +421,20 @@ const props = defineProps({
     currentShift: { type: Object, default: null },
     issueTypes: { type: Array, default: () => [] },
     issueSeverities: { type: Array, default: () => ['low', 'medium', 'high'] },
+    stats: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
 const scanResult = computed(() => page.props.flash?.scanResult ?? null);
 const shiftStatus = computed(() => page.props.flash?.shiftStatus ?? null);
 const issueStatus = computed(() => page.props.flash?.issueStatus ?? null);
+const stats = computed(() => ({
+    total_today: props.stats?.total_today ?? 0,
+    success: props.stats?.success ?? 0,
+    warnings: props.stats?.warnings ?? 0,
+    failed: props.stats?.failed ?? 0,
+}));
+const supportsIndexedDb = isIndexedDbSupported();
 
 const storedDeviceId =
     (typeof window !== 'undefined' && window.localStorage.getItem('guardDeviceId')) ||
@@ -526,7 +565,7 @@ const clearLocalHistory = () => {
     saveLocalHistory();
 };
 
-const queueOfflineScan = () => {
+const queueOfflineScan = async () => {
     const payload = {
         ...scanForm.data(),
         was_offline: true,
@@ -534,9 +573,15 @@ const queueOfflineScan = () => {
     };
     offlineQueue.value.push(payload);
     saveOfflineQueue();
+
+    let cached = null;
+    if (supportsIndexedDb) {
+        cached = await getCachedPass(payload.code);
+    }
+
     addToLocalHistory({
-        code: payload.code,
-        pass_number: payload.code,
+        visitor_name: cached?.visitor_name,
+        pass_number: cached?.pass_number || payload.code,
         result: 'queued',
         scanned_at: payload.timestamp,
     });
@@ -571,13 +616,13 @@ const handleOnline = () => {
     flushOfflineScans();
 };
 
-const submitScan = () => {
+const submitScan = async () => {
     if (!scanForm.code) {
         return;
     }
 
     if (!isOnline.value) {
-        queueOfflineScan();
+        await queueOfflineScan();
         localAlert.value = {
             class: 'text-yellow-300',
             message: 'Scan stored locally. It will sync when you are back online.',
@@ -588,7 +633,7 @@ const submitScan = () => {
 
     localAlert.value = null;
     scanForm.was_offline = false;
-    scanForm.post(route('guard.scans.store'), {
+    await scanForm.post(route('guard.scans.store'), {
         preserveScroll: true,
         onSuccess: () => {
             if (scanResult.value?.pass) {
@@ -629,6 +674,15 @@ const submitIssue = () => {
             issueForm.reset('pass_code', 'description');
         },
     });
+};
+
+const sendEmergencyAlert = () => {
+    issueForm.issue_type = 'other';
+    issueForm.severity = 'high';
+    if (!issueForm.description) {
+        issueForm.description = 'Emergency alert triggered at gate.';
+    }
+    submitIssue();
 };
 const videoRef = ref(null);
 const codeReader = new BrowserMultiFormatReader();
@@ -747,21 +801,32 @@ watch(selectedCameraId, () => {
     }
 });
 
-watch(scanResult, (value) => {
-    if (value?.pass) {
-        addToLocalHistory({
-            visitor_name: value.pass.visitor_name,
-            pass_number: value.pass.pass_number,
-            result: value.status === 'error' ? 'failed' : value.status,
-            scanned_at: new Date().toISOString(),
-        });
+watch(
+    scanResult,
+    async (value) => {
+        if (value?.pass) {
+            addToLocalHistory({
+                visitor_name: value.pass.visitor_name,
+                pass_number: value.pass.pass_number,
+                result: value.status === 'error' ? 'failed' : value.status,
+                scanned_at: new Date().toISOString(),
+            });
+
+            if (supportsIndexedDb) {
+                await cachePass(value.pass, [value.input_code]);
+                await trimCachedPasses(100);
+            }
+        }
     }
-});
+);
 
 onMounted(() => {
     enumerateCameras();
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
+    if (supportsIndexedDb) {
+        trimCachedPasses(100);
+    }
 });
 
 onBeforeUnmount(() => {

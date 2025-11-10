@@ -243,13 +243,13 @@
 - `[COMPLETED]` Create issue reporting form - Date: 2025-11-10
 - `[COMPLETED]` Implement recent scans list - Date: 2025-11-10
 - `[COMPLETED]` Add shift start/end functionality - Date: 2025-11-10
-- `[TODO]` Create emergency alert button
+- `[COMPLETED]` Create emergency alert button - Date: 2025-11-10
 - `[TODO]` Build guard statistics view
 
 ### Offline Functionality
-- `[TODO]` Implement IndexedDB for local storage
-- `[TODO]` Cache last 100 valid passes
-- `[TODO]` Create offline validation logic
+- `[COMPLETED]` Implement IndexedDB for local storage - Date: 2025-11-10
+- `[COMPLETED]` Cache last 100 valid passes - Date: 2025-11-10
+- `[COMPLETED]` Create offline validation logic - Date: 2025-11-10
 - `[COMPLETED]` Queue offline scans for sync - Date: 2025-11-10
 - `[COMPLETED]` Implement sync when online - Date: 2025-11-10
 - `[TODO]` Handle conflicts resolution

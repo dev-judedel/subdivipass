@@ -24,7 +24,7 @@ class GuardIssueReport extends Model
         'resolved_at' => 'datetime',
     ];
 
-    public function guard()
+    public function guardUser()
     {
         return $this->belongsTo(User::class, 'guard_id');
     }

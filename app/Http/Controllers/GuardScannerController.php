@@ -44,6 +44,8 @@ class GuardScannerController extends Controller
             ->latest('started_at')
             ->first();
 
+        $stats = $this->buildStats($guard->id);
+
         return Inertia::render('Guard/Scanner', [
             'gates' => $gates,
             'defaultGateId' => $gates->first()->id ?? null,
@@ -51,6 +53,7 @@ class GuardScannerController extends Controller
             'currentShift' => $currentShift,
             'issueTypes' => $this->issueTypes(),
             'issueSeverities' => ['low', 'medium', 'high'],
+            'stats' => $stats,
         ]);
     }
 
@@ -106,11 +109,13 @@ class GuardScannerController extends Controller
                     'visitor_name' => $pass->visitor_name,
                     'status' => $pass->status,
                     'valid_to' => $pass->valid_to,
+                    'uuid' => $pass->uuid,
                 ],
                 'gate' => [
                     'id' => $gate->id,
                     'name' => $gate->name,
                 ],
+                'input_code' => $data['code'],
             ]));
     }
 
@@ -301,6 +306,25 @@ class GuardScannerController extends Controller
             'equipment_issue',
             'medical_assistance',
             'other',
+        ];
+    }
+
+    protected function buildStats(int $guardId): array
+    {
+        $totals = PassScan::selectRaw('result, COUNT(*) as total')
+            ->where('guard_id', $guardId)
+            ->whereDate('scanned_at', today())
+            ->groupBy('result')
+            ->pluck('total', 'result')
+            ->toArray();
+
+        $total = array_sum($totals);
+
+        return [
+            'total_today' => $total,
+            'success' => $totals['success'] ?? 0,
+            'warnings' => $totals['warning'] ?? 0,
+            'failed' => ($totals['failed'] ?? 0) + ($totals['error'] ?? 0),
         ];
     }
 }

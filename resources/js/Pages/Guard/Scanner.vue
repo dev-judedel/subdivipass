@@ -23,6 +23,93 @@
             </div>
         </div>
 
+        <div
+            v-if="canInstallPwa"
+            class="rounded-2xl border border-blue-500/40 bg-blue-500/10 p-4 flex flex-wrap gap-3 items-center justify-between text-sm text-blue-100"
+        >
+            <div>
+                <p class="font-semibold">Install guard console</p>
+                <p class="text-blue-200/80">Add SubdiPass Guard to your home screen for full-screen scanning.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button
+                    type="button"
+                    class="rounded-lg border border-blue-400/60 px-3 py-1 text-xs font-semibold hover:bg-blue-400/20"
+                    @click="dismissPwaInstall"
+                >
+                    Later
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-lg shadow-blue-500/30 hover:bg-blue-400"
+                    @click="promptPwaInstall"
+                >
+                    Install
+                </button>
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-slate-400">Network Status</p>
+                    <p class="text-lg font-semibold text-white">
+                        {{ isOnline ? 'Connected' : 'Offline (queued only)' }}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        {{ isOnline ? 'Scans sync instantly' : 'Scans queue locally until connection resumes' }}
+                    </p>
+                </div>
+                <span
+                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="isOnline ? 'bg-green-500/20 text-green-200' : 'bg-yellow-500/20 text-yellow-200'"
+                >
+                    <span class="h-2.5 w-2.5 rounded-full" :class="isOnline ? 'bg-green-400' : 'bg-yellow-400'"></span>
+                    {{ isOnline ? 'Online' : 'Offline' }}
+                </span>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-400">Push Notifications</p>
+                        <p class="text-lg font-semibold text-white">{{ pushStatusLabel }}</p>
+                    </div>
+                    <span v-if="pushPermission === 'denied'" class="text-xs text-red-400 font-semibold">
+                        Allow in browser
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                    Get alerts for escalations, security broadcasts, and sync issues even when the app is closed.
+                </p>
+                <div class="mt-3 flex flex-wrap gap-3">
+                    <button
+                        v-if="pushSupported && pushCanSubscribe && !pushEnabled"
+                        type="button"
+                        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold shadow-lg shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-50"
+                        :disabled="pushBusy"
+                        @click="enablePushNotifications"
+                    >
+                        Enable alerts
+                    </button>
+                    <button
+                        v-if="pushSupported && pushEnabled"
+                        type="button"
+                        class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                        :disabled="pushBusy"
+                        @click="disablePushNotifications"
+                    >
+                        Disable alerts
+                    </button>
+                    <p v-if="!pushSupported" class="text-xs text-slate-500">
+                        Push notifications are not available on this device.
+                    </p>
+                </div>
+                <p v-if="pushErrorMessage" class="mt-2 text-xs text-red-400">
+                    {{ pushErrorMessage }}
+                </p>
+            </div>
+        </div>
+
         <div class="grid gap-6 lg:grid-cols-3">
             <div class="space-y-6 lg:col-span-2">
                 <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
@@ -448,6 +535,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import GuardLayout from '@/Layouts/GuardLayout.vue';
 import { cachePass, getCachedPass, trimCachedPasses, isIndexedDbSupported } from '@/utils/indexedDb';
+import { usePwaInstallPrompt } from '@/composables/usePwaInstallPrompt';
+import { usePushNotifications } from '@/composables/usePushNotifications';
 
 defineOptions({ layout: GuardLayout });
 
@@ -542,6 +631,28 @@ const methodOptions = [
     { label: 'QR / Pass #', value: 'qr' },
     { label: 'PIN', value: 'pin' },
 ];
+
+const { canInstall: canInstallPwa, promptInstall: promptPwaInstall, dismissInstall: dismissPwaInstall } =
+    usePwaInstallPrompt();
+const {
+    isSupported: pushSupported,
+    statusLabel: pushStatusLabel,
+    permission: pushPermission,
+    isBusy: pushBusy,
+    errorMessage: pushErrorMessage,
+    hasSubscription: pushEnabled,
+    canSubscribe: pushCanSubscribe,
+    subscribe: subscribeToPush,
+    unsubscribe: unsubscribeFromPush,
+} = usePushNotifications();
+
+const enablePushNotifications = () => {
+    subscribeToPush();
+};
+
+const disablePushNotifications = () => {
+    unsubscribeFromPush();
+};
 
 const resultClasses = {
     success: 'border-green-600/40 bg-green-500/10',

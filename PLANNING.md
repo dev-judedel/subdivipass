@@ -117,10 +117,10 @@ A mobile-first PWA that enables:
 - Gate configuration
 
 ### Phase 4: Guard Interface (Weeks 5-7)
-- PWA setup *(in progress – base guard layout built, PWA wrappers pending)*
+- PWA setup *(completed: manifest, Workbox service worker, install prompt, push opt-in, and app shell caching now live)*
 - QR scanner implementation ✅ Guard scanner page with ZXing camera capture + manual fallback
 - Pass validation engine ✅ Server-side evaluation + scan logging
-- Offline functionality *(partial – offline indicator and queued sync implemented; caching/IndexedDB pending)*
+- Offline functionality *(completed: guard queue + IndexedDB cache + offline fallback handled via Workbox)*
 - Manual PIN validation ✅ Manual entry fallback in scanner UI
 
 ### Phase 5: Admin Dashboard (Weeks 7-9)

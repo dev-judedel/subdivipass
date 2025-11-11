@@ -126,6 +126,10 @@
                                 <p class="text-xl font-semibold text-slate-900">{{ subdivision.passes_count }}</p>
                                 <p class="text-xs uppercase tracking-wide text-slate-400">Passes</p>
                             </div>
+                            <div class="text-center">
+                                <p class="text-xl font-semibold text-slate-900">{{ subdivision.guard_count }}</p>
+                                <p class="text-xs uppercase tracking-wide text-slate-400">Assigned guards</p>
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <Link

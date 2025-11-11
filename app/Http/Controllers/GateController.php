@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Gates\StoreGateRequest;
 use App\Http\Requests\Gates\UpdateGateRequest;
 use App\Models\Gate;
+use App\Models\PassScan;
 use App\Models\Subdivision;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,6 +20,7 @@ class GateController extends Controller
 
         $gates = Gate::query()
             ->with('subdivision:id,name')
+            ->withCount('guards')
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -39,6 +42,7 @@ class GateController extends Controller
                 'type' => $gate->type,
                 'location' => $gate->location,
                 'subdivision' => $gate->subdivision?->only(['id', 'name']),
+                'guards_count' => $gate->guards_count,
                 'updated_at' => $gate->updated_at?->toDateTimeString(),
             ]);
 
@@ -82,6 +86,45 @@ class GateController extends Controller
 
     public function edit(Gate $gate): Response
     {
+        $assignedGuards = $gate->guards()
+            ->with('roles')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->roles->pluck('name')->first(),
+            ]);
+
+        $availableGuards = User::role('guard')
+            ->where('status', 'active')
+            ->whereNotIn('id', $assignedGuards->pluck('id'))
+            ->orderBy('name')
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]);
+
+        $recentActivity = PassScan::query()
+            ->with('pass:id,pass_number,visitor_name')
+            ->where('gate_id', $gate->id)
+            ->latest('scanned_at')
+            ->limit(10)
+            ->get()
+            ->map(fn(PassScan $scan) => [
+                'id' => $scan->id,
+                'pass_number' => $scan->pass?->pass_number,
+                'visitor_name' => $scan->pass?->visitor_name,
+                'result' => $scan->result,
+                'scan_type' => $scan->scan_type,
+                'scan_method' => $scan->scan_method,
+                'was_offline' => $scan->was_offline,
+                'scanned_at' => $scan->scanned_at?->toDateTimeString(),
+            ]);
+
         return Inertia::render('Gates/Edit', [
             'gate' => [
                 'id' => $gate->id,
@@ -100,6 +143,9 @@ class GateController extends Controller
             'statusOptions' => ['active', 'inactive', 'maintenance'],
             'typeOptions' => ['entry', 'exit', 'both'],
             'subdivisionOptions' => Subdivision::orderBy('name')->get(['id', 'name']),
+            'assignedGuards' => $assignedGuards,
+            'availableGuards' => $availableGuards,
+            'recentActivity' => $recentActivity,
         ]);
     }
 

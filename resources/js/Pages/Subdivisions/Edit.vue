@@ -16,7 +16,23 @@
             </div>
         </div>
 
-        <form class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="submit">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                <p class="text-xs uppercase tracking-wide text-slate-400 mb-4">Operational Snapshot</p>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div
+                        v-for="card in metricCards"
+                        :key="card.label"
+                        class="rounded-xl border border-slate-100 bg-slate-50/70 p-4"
+                    >
+                        <p class="text-sm text-slate-500">{{ card.label }}</p>
+                        <p class="text-3xl font-bold text-slate-900 mt-1">{{ card.value }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ card.hint }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form class="space-y-6" @submit.prevent="submit">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -228,13 +244,70 @@
                     Save Changes
                 </button>
             </div>
-        </form>
+            </form>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Assigned Team</h2>
+                        <p class="text-sm text-slate-500">Control which admins, employees, or guards can manage this subdivision.</p>
+                    </div>
+                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="assignUser">
+                        <select
+                            v-model="assignmentForm.user_id"
+                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm min-w-[220px]"
+                        >
+                            <option value="">Select user</option>
+                            <option v-for="user in availableUsers" :key="user.id" :value="user.id">
+                                {{ user.name }} ({{ user.role || 'user' }})
+                            </option>
+                        </select>
+                        <button
+                            type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-60"
+                            :disabled="assignmentForm.processing || !assignmentForm.user_id"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
+                            </svg>
+                            Assign
+                        </button>
+                    </form>
+                </div>
+                <div v-if="assignedUsers.length" class="divide-y divide-slate-100 rounded-2xl border border-slate-100">
+                    <div
+                        v-for="user in assignedUsers"
+                        :key="user.id"
+                        class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">
+                                {{ user.name }}
+                                <span class="ml-2 text-xs uppercase tracking-wide text-slate-400">{{ user.role }}</span>
+                            </p>
+                            <p class="text-xs text-slate-500">{{ user.email }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-red-400 hover:text-red-500"
+                            @click="removeAssignedUser(user.id)"
+                        >
+                            <span class="sr-only">Remove {{ user.name }}</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <p v-else class="text-sm text-slate-500">No users assigned yet.</p>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 defineOptions({ layout: DashboardLayout });
@@ -242,6 +315,9 @@ defineOptions({ layout: DashboardLayout });
 const props = defineProps({
     subdivision: { type: Object, required: true },
     statusOptions: { type: Array, default: () => [] },
+    assignedUsers: { type: Array, default: () => [] },
+    availableUsers: { type: Array, default: () => [] },
+    metrics: { type: Object, default: () => ({}) },
 });
 
 const form = useForm({
@@ -293,4 +369,47 @@ const submit = () => {
         forceFormData: true,
     });
 };
+
+const assignmentForm = useForm({
+    user_id: '',
+});
+
+const assignUser = () => {
+    if (!assignmentForm.user_id) {
+        return;
+    }
+    assignmentForm.post(route('subdivisions.users.store', props.subdivision.id), {
+        preserveScroll: true,
+        onSuccess: () => assignmentForm.reset('user_id'),
+    });
+};
+
+const removeAssignedUser = (userId) => {
+    router.delete(route('subdivisions.users.destroy', [props.subdivision.id, userId]), {
+        preserveScroll: true,
+    });
+};
+
+const metricCards = computed(() => [
+    {
+        label: 'Registered gates',
+        value: props.metrics?.gates ?? 0,
+        hint: 'Linked to this subdivision',
+    },
+    {
+        label: 'Assigned users',
+        value: props.metrics?.assigned_users ?? 0,
+        hint: 'Admins / employees / guards',
+    },
+    {
+        label: 'Guard roster',
+        value: props.metrics?.guards ?? 0,
+        hint: 'Active guard assignments',
+    },
+    {
+        label: 'Active passes',
+        value: props.metrics?.active_passes ?? 0,
+        hint: 'Currently valid',
+    },
+]);
 </script>

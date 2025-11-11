@@ -111,6 +111,9 @@
                             >
                                 {{ gate.status }}
                             </span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold text-slate-600 bg-slate-100">
+                                {{ gate.guards_count }} Guards
+                            </span>
                         </div>
                         <div class="flex items-center gap-3">
                             <Link

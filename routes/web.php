@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\GateController;
+use App\Http\Controllers\GateGuardAssignmentController;
 use App\Http\Controllers\GuardIssueReportController;
 use App\Http\Controllers\GuardPushSubscriptionController;
 use App\Http\Controllers\GuardScannerController;
 use App\Http\Controllers\SubdivisionController;
+use App\Http\Controllers\SubdivisionUserAssignmentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -85,6 +87,14 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('guard-issues', GuardIssueReportController::class)->only(['index', 'show', 'update']);
         Route::resource('subdivisions', SubdivisionController::class)->except(['show']);
         Route::resource('gates', GateController::class)->except(['show']);
+        Route::post('subdivisions/{subdivision}/users', [SubdivisionUserAssignmentController::class, 'store'])
+            ->name('subdivisions.users.store');
+        Route::delete('subdivisions/{subdivision}/users/{user}', [SubdivisionUserAssignmentController::class, 'destroy'])
+            ->name('subdivisions.users.destroy');
+        Route::post('gates/{gate}/guards', [GateGuardAssignmentController::class, 'store'])
+            ->name('gates.guards.store');
+        Route::delete('gates/{gate}/guards/{user}', [GateGuardAssignmentController::class, 'destroy'])
+            ->name('gates.guards.destroy');
 
         // Additional user actions
         Route::post('users/{user}/change-status', [\App\Http\Controllers\UserController::class, 'changeStatus'])

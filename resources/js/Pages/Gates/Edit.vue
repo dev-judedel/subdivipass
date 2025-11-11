@@ -16,7 +16,8 @@
             </div>
         </div>
 
-        <form class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="submit">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <form class="space-y-6" @submit.prevent="submit">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -158,12 +159,97 @@
                     Save Changes
                 </button>
             </div>
-        </form>
+            </form>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Assigned Guards</h2>
+                        <p class="text-sm text-slate-500">Only these guards will see {{ gate.name }} in their scanner.</p>
+                    </div>
+                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="assignGuard">
+                        <select
+                            v-model="guardAssignmentForm.user_id"
+                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm min-w-[220px]"
+                        >
+                            <option value="">Select guard</option>
+                            <option v-for="guard in availableGuards" :key="guard.id" :value="guard.id">
+                                {{ guard.name }} ({{ guard.email }})
+                            </option>
+                        </select>
+                        <button
+                            type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-60"
+                            :disabled="guardAssignmentForm.processing || !guardAssignmentForm.user_id"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
+                            </svg>
+                            Assign
+                        </button>
+                    </form>
+                </div>
+                <div v-if="assignedGuards.length" class="divide-y divide-slate-100 rounded-2xl border border-slate-100">
+                    <div
+                        v-for="guard in assignedGuards"
+                        :key="guard.id"
+                        class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">{{ guard.name }}</p>
+                            <p class="text-xs text-slate-500">{{ guard.email }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-red-400 hover:text-red-500"
+                            @click="removeGuard(guard.id)"
+                        >
+                            <span class="sr-only">Remove {{ guard.name }}</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <p v-else class="text-sm text-slate-500">No guards assigned to this gate.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+                        <p class="text-sm text-slate-500">Latest scans synced for this gate.</p>
+                    </div>
+                </div>
+                <div v-if="recentActivity.length" class="space-y-4">
+                    <div
+                        v-for="scan in recentActivity"
+                        :key="scan.id"
+                        class="rounded-xl border border-slate-100 bg-slate-50/70 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">
+                                {{ scan.pass_number || 'Unknown pass' }}
+                                <span class="ml-2 text-xs text-slate-500">{{ scan.visitor_name || 'No visitor info' }}</span>
+                            </p>
+                            <p class="text-xs text-slate-400">
+                                {{ scan.scan_type }} via {{ scan.scan_method }} • {{ scan.scanned_at }}
+                            </p>
+                            <p v-if="scan.was_offline" class="text-xs text-amber-600">Synced from offline queue</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold capitalize" :class="resultBadge(scan.result)">
+                            {{ scan.result }}
+                        </span>
+                    </div>
+                </div>
+                <p v-else class="text-sm text-slate-500">No scans recorded for this gate yet.</p>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 defineOptions({ layout: DashboardLayout });
@@ -173,6 +259,9 @@ const props = defineProps({
     statusOptions: { type: Array, default: () => [] },
     typeOptions: { type: Array, default: () => [] },
     subdivisionOptions: { type: Array, default: () => [] },
+    assignedGuards: { type: Array, default: () => [] },
+    availableGuards: { type: Array, default: () => [] },
+    recentActivity: { type: Array, default: () => [] },
 });
 
 const form = useForm({
@@ -194,5 +283,36 @@ const submit = () => {
     form.post(route('gates.update', props.gate.id), {
         preserveScroll: true,
     });
+};
+
+const guardAssignmentForm = useForm({
+    user_id: '',
+});
+
+const assignGuard = () => {
+    if (!guardAssignmentForm.user_id) {
+        return;
+    }
+    guardAssignmentForm.post(route('gates.guards.store', props.gate.id), {
+        preserveScroll: true,
+        onSuccess: () => guardAssignmentForm.reset('user_id'),
+    });
+};
+
+const removeGuard = (userId) => {
+    router.delete(route('gates.guards.destroy', [props.gate.id, userId]), {
+        preserveScroll: true,
+    });
+};
+
+const resultBadge = (result) => {
+    switch (result) {
+        case 'success':
+            return 'bg-green-100 text-green-700';
+        case 'warning':
+            return 'bg-yellow-100 text-yellow-700';
+        default:
+            return 'bg-red-100 text-red-700';
+    }
 };
 </script>

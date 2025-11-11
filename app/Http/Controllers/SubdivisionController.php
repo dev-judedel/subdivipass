@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Subdivisions\StoreSubdivisionRequest;
 use App\Http\Requests\Subdivisions\UpdateSubdivisionRequest;
 use App\Models\Subdivision;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -17,7 +18,14 @@ class SubdivisionController extends Controller
         $filters = $request->only(['search', 'status']);
 
         $subdivisions = Subdivision::query()
-            ->withCount(['gates', 'passTypes', 'passes'])
+            ->withCount([
+                'gates',
+                'passTypes',
+                'passes',
+                'users as guard_count' => function ($query) {
+                    $query->whereHas('roles', fn($roleQuery) => $roleQuery->where('name', 'guard'));
+                },
+            ])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -40,6 +48,7 @@ class SubdivisionController extends Controller
                 'gates_count' => $subdivision->gates_count,
                 'pass_types_count' => $subdivision->pass_types_count,
                 'passes_count' => $subdivision->passes_count,
+                'guard_count' => $subdivision->guard_count,
                 'logo_url' => $subdivision->logo_path ? Storage::url($subdivision->logo_path) : null,
                 'updated_at' => $subdivision->updated_at?->toDateTimeString(),
             ]);
@@ -89,6 +98,38 @@ class SubdivisionController extends Controller
 
     public function edit(Subdivision $subdivision): Response
     {
+        $subdivision->load(['users.roles', 'gates']);
+
+        $assignedUsers = $subdivision->users
+            ->sortBy('name')
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->roles->pluck('name')->first(),
+                'status' => $user->status,
+            ])
+            ->values();
+
+        $availableUsers = User::role(['admin', 'employee', 'guard'])
+            ->where('status', 'active')
+            ->whereNotIn('id', $assignedUsers->pluck('id'))
+            ->orderBy('name')
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->roles->pluck('name')->first(),
+            ]);
+
+        $metrics = [
+            'gates' => $subdivision->gates->count(),
+            'assigned_users' => $assignedUsers->count(),
+            'guards' => $assignedUsers->where('role', 'guard')->count(),
+            'active_passes' => $subdivision->passes()->where('status', 'active')->count(),
+        ];
+
         return Inertia::render('Subdivisions/Edit', [
             'subdivision' => [
                 'id' => $subdivision->id,
@@ -104,6 +145,9 @@ class SubdivisionController extends Controller
                 'logo_url' => $subdivision->logo_path ? Storage::url($subdivision->logo_path) : null,
             ],
             'statusOptions' => ['active', 'inactive', 'suspended'],
+            'assignedUsers' => $assignedUsers,
+            'availableUsers' => $availableUsers,
+            'metrics' => $metrics,
         ]);
     }
 

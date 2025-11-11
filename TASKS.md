@@ -188,7 +188,7 @@
 - `[COMPLETED]` Add subdivision edit functionality - Date: 2025-11-11
 - `[COMPLETED]` Build subdivision dashboard (index stats cards) - Date: 2025-11-11
 - `[COMPLETED]` Implement subdivision-specific pass types - Date: 2025-11-10
-- `[TODO]` Add subdivision user assignment
+- `[COMPLETED]` Add subdivision user assignment - Date: 2025-11-11
 - `[COMPLETED]` Create subdivision deactivation - Date: 2025-11-11
 - `[COMPLETED]` Build subdivision statistics view - Date: 2025-11-11
 
@@ -198,11 +198,11 @@
 - `[COMPLETED]` Create gate registration per subdivision - Date: 2025-11-11
 - `[COMPLETED]` Add gate location mapping (coordinates support) - Date: 2025-11-11
 - `[COMPLETED]` Implement gate status management - Date: 2025-11-11
-- `[TODO]` Create gate assignment for guards
+- `[COMPLETED]` Create gate assignment for guards - Date: 2025-11-11
 - `[COMPLETED]` Build gate listing interface - Date: 2025-11-11
-- `[TODO]` Add gate activity monitoring
+- `[COMPLETED]` Add gate activity monitoring - Date: 2025-11-11
 - `[TODO]` Create gate-specific settings
-- `[TODO]` Implement gate access logs
+- `[COMPLETED]` Implement gate access logs - Date: 2025-11-11
 
 ---
 

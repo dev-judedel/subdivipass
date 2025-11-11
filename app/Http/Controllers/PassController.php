@@ -31,7 +31,7 @@ class PassController extends Controller
         // Filter by subdivision if user is not super-admin
         $user = $request->user();
         if (!$user->hasRole('super-admin')) {
-            $subdivisionIds = json_decode($user->subdivision_ids, true) ?? [];
+            $subdivisionIds = $this->resolveSubdivisionIds($user);
             $query->whereIn('subdivision_id', $subdivisionIds);
         }
 
@@ -78,7 +78,7 @@ class PassController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        $subdivisionIds = json_decode($user->subdivision_ids, true) ?? [];
+        $subdivisionIds = $this->resolveSubdivisionIds($user);
 
         $subdivisions = Subdivision::where('status', 'active')
             ->when(!$user->hasRole('super-admin'), function ($query) use ($subdivisionIds) {
@@ -245,5 +245,21 @@ class PassController extends Controller
             storage_path('app/public/' . $pass->qr_code_path),
             $pass->pass_number . '.png'
         );
+    }
+
+    /**
+     * Normalize subdivision IDs regardless of storage format.
+     */
+    protected function resolveSubdivisionIds($user): array
+    {
+        if (is_array($user->subdivision_ids)) {
+            return $user->subdivision_ids;
+        }
+
+        if (is_string($user->subdivision_ids) && $user->subdivision_ids !== '') {
+            return json_decode($user->subdivision_ids, true) ?? [];
+        }
+
+        return [];
     }
 }

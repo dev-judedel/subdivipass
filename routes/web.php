@@ -9,6 +9,7 @@ use App\Http\Controllers\GuardPushSubscriptionController;
 use App\Http\Controllers\GuardScannerController;
 use App\Http\Controllers\SubdivisionController;
 use App\Http\Controllers\SubdivisionUserAssignmentController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -26,6 +27,7 @@ use Inertia\Inertia;
 // Root route - redirect based on auth status
 Route::get('/', function () {
     if (Auth::check()) {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->hasRole('super-admin') || $user->hasRole('admin')) {

@@ -9,13 +9,14 @@
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ guard?.name }}</p>
                     <p class="text-xs text-slate-400 capitalize">{{ guardPrimaryRole }}</p>
-                    <button
-                        type="button"
-                        class="mt-2 text-xs font-semibold text-red-300 hover:text-red-100"
-                        @click="logout"
-                    >
-                        Logout
-                    </button>
+                    <form method="POST" action="/logout" @submit.prevent="logout">
+                        <button
+                            type="submit"
+                            class="mt-2 text-xs font-semibold text-red-300 hover:text-red-100"
+                        >
+                            Logout
+                        </button>
+                    </form>
                 </div>
             </div>
         </header>
@@ -35,6 +36,6 @@ const guard = computed(() => page.props.auth?.user ?? null);
 const guardPrimaryRole = computed(() => guard.value?.roles?.[0]?.name ?? 'guard');
 
 const logout = () => {
-    router.post('/logout');
+    router.post('/logout', {}, { onFinish: () => (window.location.href = '/login') });
 };
 </script>

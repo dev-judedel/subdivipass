@@ -146,8 +146,8 @@
 - `[COMPLETED]` Create approval request system - Date: 2024-11-09
 - `[COMPLETED]` Implement auto-approval logic - Date: 2024-11-09
 - `[COMPLETED]` Add pass status management - Date: 2024-11-09
-- `[TODO]` Create pass preview before submission
-- `[TODO]` Build pass confirmation screen
+- `[COMPLETED]` Create pass preview before submission - Date: 2024-11-11
+- `[COMPLETED]` Build pass confirmation screen - Date: 2024-11-11
 
 ### Pass Management UI
 - `[COMPLETED]` Create Pass listing Vue component (Index.vue) - Date: 2024-11-10

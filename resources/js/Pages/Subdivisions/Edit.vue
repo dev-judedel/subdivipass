@@ -32,7 +32,7 @@
                 </div>
             </div>
 
-            <form class="space-y-6" @submit.prevent="submit">
+            <form class="space-y-6" @submit.prevent="openMainConfirm">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -252,7 +252,7 @@
                         <h2 class="text-lg font-semibold text-slate-900">Assigned Team</h2>
                         <p class="text-sm text-slate-500">Control which admins, employees, or guards can manage this subdivision.</p>
                     </div>
-                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="assignUser">
+                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="openAssignConfirm">
                         <select
                             v-model="assignmentForm.user_id"
                             class="rounded-xl border border-slate-200 px-4 py-2 text-sm min-w-[220px]"
@@ -290,7 +290,7 @@
                         <button
                             type="button"
                             class="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-red-400 hover:text-red-500"
-                            @click="removeAssignedUser(user.id)"
+                            @click="openRemovalConfirm(user)"
                         >
                             <span class="sr-only">Remove {{ user.name }}</span>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,6 +302,52 @@
                 <p v-else class="text-sm text-slate-500">No users assigned yet.</p>
             </div>
         </div>
+
+        <ConfirmModal
+            v-model="showMainConfirm"
+            title="Save subdivision changes?"
+            confirm-label="Save Changes"
+            processing-label="Saving..."
+            :loading="form.processing"
+            @confirm="submit"
+        >
+            <p>
+                Apply updates to <span class="font-semibold">{{ form.name }}</span> ({{ form.code }}).
+            </p>
+            <p class="mt-2 text-sm text-gray-600">
+                Guard rules and contact info will refresh immediately for all linked gates.
+            </p>
+        </ConfirmModal>
+
+        <ConfirmModal
+            v-model="showAssignConfirm"
+            title="Assign this user?"
+            confirm-label="Assign User"
+            processing-label="Assigning..."
+            :loading="assignmentForm.processing"
+            @confirm="assignUser"
+        >
+            <p>
+                Add <span class="font-semibold">{{ selectedAssignableUser?.name || 'the selected user' }}</span>
+                to <span class="font-semibold">{{ subdivision.name }}</span>.
+            </p>
+            <p class="mt-2 text-sm text-gray-600">They will gain subdivision-level access immediately.</p>
+        </ConfirmModal>
+
+        <ConfirmModal
+            v-model="showRemovalConfirm"
+            title="Remove this assignment?"
+            confirm-label="Remove Access"
+            processing-label="Removing..."
+            confirm-variant="danger"
+            :loading="removalProcessing"
+            @confirm="confirmRemoval"
+        >
+            <p>
+                Remove <span class="font-semibold">{{ removalTarget?.name }}</span> from
+                <span class="font-semibold">{{ subdivision.name }}</span>? They will lose access to all gates linked to this subdivision.
+            </p>
+        </ConfirmModal>
     </div>
 </template>
 
@@ -309,6 +355,7 @@
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -337,6 +384,11 @@ const form = useForm({
 
 const logoInput = ref(null);
 const logoPreview = ref(props.subdivision.logo_url);
+const showMainConfirm = ref(false);
+const showAssignConfirm = ref(false);
+const showRemovalConfirm = ref(false);
+const removalTarget = ref(null);
+const removalProcessing = ref(false);
 
 const handleLogoChange = (event) => {
     const file = event.target.files[0];
@@ -367,28 +419,58 @@ const submit = () => {
     form.post(route('subdivisions.update', props.subdivision.id), {
         preserveScroll: true,
         forceFormData: true,
+        onSuccess: () => {
+            showMainConfirm.value = false;
+        },
     });
+};
+
+const openMainConfirm = () => {
+    showMainConfirm.value = true;
 };
 
 const assignmentForm = useForm({
     user_id: '',
 });
 
+const openAssignConfirm = () => {
+    if (!assignmentForm.user_id) return;
+    showAssignConfirm.value = true;
+};
+
 const assignUser = () => {
-    if (!assignmentForm.user_id) {
-        return;
-    }
     assignmentForm.post(route('subdivisions.users.store', props.subdivision.id), {
         preserveScroll: true,
-        onSuccess: () => assignmentForm.reset('user_id'),
+        onSuccess: () => {
+            assignmentForm.reset('user_id');
+            showAssignConfirm.value = false;
+        },
     });
 };
 
-const removeAssignedUser = (userId) => {
-    router.delete(route('subdivisions.users.destroy', [props.subdivision.id, userId]), {
+const openRemovalConfirm = (user) => {
+    removalTarget.value = user;
+    showRemovalConfirm.value = true;
+};
+
+const confirmRemoval = () => {
+    if (!removalTarget.value) return;
+    removalProcessing.value = true;
+    router.delete(route('subdivisions.users.destroy', [props.subdivision.id, removalTarget.value.id]), {
         preserveScroll: true,
+        onSuccess: () => {
+            showRemovalConfirm.value = false;
+            removalTarget.value = null;
+        },
+        onFinish: () => {
+            removalProcessing.value = false;
+        },
     });
 };
+
+const selectedAssignableUser = computed(() =>
+    props.availableUsers.find((user) => user.id === assignmentForm.user_id) ?? null
+);
 
 const metricCards = computed(() => [
     {

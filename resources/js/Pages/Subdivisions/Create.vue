@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <form class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="submit">
+        <form class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="openConfirm">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -233,12 +233,30 @@
             </div>
         </form>
     </div>
+        <ConfirmModal
+            v-model="showConfirm"
+            title="Create this subdivision?"
+            confirm-label="Create Subdivision"
+            processing-label="Creating..."
+            :loading="form.processing"
+            @confirm="submit"
+        >
+            <p>
+                You're about to create <span class="font-semibold">{{ form.name || 'a new subdivision' }}</span>
+                with code <span class="font-semibold">{{ form.code || 'TBD' }}</span>.
+            </p>
+            <p class="mt-2 text-sm text-gray-600">
+                Guard policies and settings can be adjusted later from the subdivision details page.
+            </p>
+        </ConfirmModal>
+    </div>
 </template>
 
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -271,6 +289,7 @@ const form = useForm({
 
 const logoInput = ref(null);
 const logoPreview = ref(null);
+const showConfirm = ref(false);
 
 const handleLogoChange = (event) => {
     const file = event.target.files[0];
@@ -292,6 +311,13 @@ const submit = () => {
     form.post(route('subdivisions.store'), {
         preserveScroll: true,
         forceFormData: true,
+        onSuccess: () => {
+            showConfirm.value = false;
+        },
     });
+};
+
+const openConfirm = () => {
+    showConfirm.value = true;
 };
 </script>

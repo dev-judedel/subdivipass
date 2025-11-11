@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <form class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="submit">
+        <form class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" @submit.prevent="openConfirm">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -249,11 +249,30 @@
             </div>
         </form>
     </div>
+        <ConfirmModal
+            v-model="showConfirm"
+            title="Register this gate?"
+            confirm-label="Create Gate"
+            processing-label="Saving..."
+            :loading="form.processing"
+            @confirm="submit"
+        >
+            <p>
+                Create <span class="font-semibold">{{ form.name || 'a new gate' }}</span>
+                for <span class="font-semibold">{{ selectedSubdivisionName }}</span>.
+            </p>
+            <p class="mt-2 text-sm text-gray-600">
+                These settings will define how guards scan and log entries for this gate.
+            </p>
+        </ConfirmModal>
+    </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -289,9 +308,23 @@ const form = useForm({
     settings: { ...props.defaultSettings },
 });
 
+const showConfirm = ref(false);
+
+const selectedSubdivisionName = computed(() => {
+    if (!form.subdivision_id) return 'this subdivision';
+    return props.subdivisionOptions.find((opt) => opt.id === form.subdivision_id)?.name ?? 'this subdivision';
+});
+
 const submit = () => {
     form.post(route('gates.store'), {
         preserveScroll: true,
+        onSuccess: () => {
+            showConfirm.value = false;
+        },
     });
+};
+
+const openConfirm = () => {
+    showConfirm.value = true;
 };
 </script>

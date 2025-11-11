@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="openConfirm" class="space-y-6">
                 <!-- Pass Information (Read-only) -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Pass Information</h2>
@@ -335,13 +335,31 @@
                 </div>
             </form>
         </div>
+
+        <ConfirmModal
+            v-model="showConfirm"
+            title="Save changes to this pass?"
+            confirm-label="Save Changes"
+            processing-label="Saving..."
+            :loading="form.processing"
+            @confirm="submit"
+        >
+            <p>
+                You're updating <span class="font-semibold">{{ pass.pass_number }}</span>
+                for <span class="font-semibold">{{ form.visitor_name || pass.visitor_name }}</span>.
+            </p>
+            <p class="mt-2 text-sm text-gray-600" v-if="validityChanged">
+                Changing the validity window will refresh the QR signature for this pass.
+            </p>
+        </ConfirmModal>
     </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -400,10 +418,17 @@ const formatDateTimeLocal = (dateString) => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
+const showConfirm = ref(false);
+
+const openConfirm = () => {
+    showConfirm.value = true;
+};
+
 const submit = () => {
     form.put(route('passes.update', props.pass.id), {
+        preserveScroll: true,
         onSuccess: () => {
-            // Will redirect to pass show page
+            showConfirm.value = false;
         },
     });
 };

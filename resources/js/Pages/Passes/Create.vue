@@ -22,7 +22,7 @@
         </div>
 
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="openPreview" class="space-y-6">
                 <!-- Subdivision and Pass Type Selection -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Pass Information</h2>
@@ -317,6 +317,79 @@
                     </div>
                 </div>
 
+                <!-- Preview -->
+                <div v-if="showPreview" class="bg-white rounded-lg shadow-sm border border-blue-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-sm uppercase text-blue-500 font-semibold tracking-wide">Review Details</p>
+                            <h3 class="text-xl font-semibold text-gray-900">Pass Summary</h3>
+                        </div>
+                        <span
+                            v-if="selectedPassType?.requires_approval"
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800"
+                        >
+                            Approval Required
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Subdivision</p>
+                                <p class="text-base font-semibold text-gray-900">{{ selectedSubdivision?.name ?? 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Pass Type</p>
+                                <p class="text-base font-semibold text-gray-900">{{ selectedPassType?.name ?? 'N/A' }}</p>
+                                <p class="text-sm text-gray-500" v-if="selectedPassType?.description">{{ selectedPassType.description }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Validity Window</p>
+                                <p class="text-sm text-gray-900">{{ formatDateTime(form.valid_from) }} - {{ formatDateTime(form.valid_to) }}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Visitor</p>
+                                <p class="text-base font-semibold text-gray-900">{{ form.visitor_name || 'N/A' }}</p>
+                                <p class="text-sm text-gray-500" v-if="form.visitor_contact">{{ form.visitor_contact }}</p>
+                                <p class="text-sm text-gray-500" v-if="form.visitor_email">{{ form.visitor_email }}</p>
+                                <p class="text-sm text-gray-500" v-if="form.visitor_company">{{ form.visitor_company }}</p>
+                            </div>
+                            <div v-if="form.vehicle_plate || form.vehicle_model">
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Vehicle</p>
+                                <p class="text-sm text-gray-900">
+                                    {{ form.vehicle_plate || 'N/A' }}
+                                    <span class="text-gray-500" v-if="form.vehicle_model">({{ form.vehicle_model }})</span>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide">Destination & Purpose</p>
+                                <p class="text-sm text-gray-900">{{ form.destination || 'N/A' }}</p>
+                                <p class="text-sm text-gray-500 mt-1">{{ form.purpose || 'N/A' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end gap-3">
+                        <button
+                            type="button"
+                            class="px-4 py-2 text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition"
+                            @click="showPreview = false"
+                        >
+                            Back to Edit
+                        </button>
+                        <button
+                            type="button"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition"
+                            @click="openConfirmation"
+                        >
+                            Continue to Confirmation
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end gap-4">
                     <Link
@@ -327,11 +400,9 @@
                     </Link>
                     <button
                         type="submit"
-                        :disabled="form.processing"
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-150"
                     >
-                        <span v-if="form.processing">Creating Pass...</span>
-                        <span v-else>Create Pass</span>
+                        Review Details
                     </button>
                 </div>
 
@@ -348,6 +419,37 @@
                 </div>
             </form>
         </div>
+
+        <ConfirmModal
+            v-model="showConfirm"
+            title="Create this pass?"
+            confirm-label="Confirm & Create Pass"
+            processing-label="Creating Pass..."
+            :loading="form.processing"
+            @confirm="confirmSubmit"
+            @cancel="showConfirm = false"
+        >
+            <p>
+                You're about to create a <span class="font-semibold">{{ selectedPassType?.name ?? 'pass' }}</span>
+                for <span class="font-semibold">{{ form.visitor_name || 'an unnamed visitor' }}</span>
+                in <span class="font-semibold">{{ selectedSubdivision?.name ?? 'N/A' }}</span>. Make sure all details look correct before proceeding.
+            </p>
+
+            <div class="mt-4 bg-gray-50 rounded-lg p-4 text-sm text-gray-600 space-y-2">
+                <p>
+                    <span class="font-semibold text-gray-800">Validity:</span>
+                    {{ formatDateTime(form.valid_from) }} - {{ formatDateTime(form.valid_to) }}
+                </p>
+                <p v-if="form.destination">
+                    <span class="font-semibold text-gray-800">Destination:</span>
+                    {{ form.destination }}
+                </p>
+                <p v-if="form.notes">
+                    <span class="font-semibold text-gray-800">Notes:</span>
+                    {{ form.notes }}
+                </p>
+            </div>
+        </ConfirmModal>
     </div>
 </template>
 
@@ -355,6 +457,7 @@
 import { ref, computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -381,10 +484,19 @@ const form = useForm({
     valid_to: '',
 });
 
+// UI state
+const showPreview = ref(false);
+const showConfirm = ref(false);
+
 // Computed
 const filteredPassTypes = computed(() => {
     if (!form.subdivision_id) return [];
     return props.passTypes.filter(type => type.subdivision_id == form.subdivision_id);
+});
+
+const selectedSubdivision = computed(() => {
+    if (!form.subdivision_id) return null;
+    return props.subdivisions.find(subdivision => subdivision.id == form.subdivision_id) ?? null;
 });
 
 const selectedPassType = computed(() => {
@@ -392,21 +504,49 @@ const selectedPassType = computed(() => {
     return props.passTypes.find(type => type.id == form.pass_type_id);
 });
 
+const formatDateTime = (value) => {
+    if (!value) return 'Not set';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(date);
+};
+
 // Methods
+const resetReviewState = () => {
+    showPreview.value = false;
+    showConfirm.value = false;
+};
+
 const onSubdivisionChange = () => {
     // Reset pass type when subdivision changes
     form.pass_type_id = '';
+    resetReviewState();
 };
 
 const onPassTypeChange = () => {
     // Could auto-populate validity dates based on pass type defaults here
     // For now, we let the backend handle the default validity calculation
+    resetReviewState();
 };
 
-const submit = () => {
+const openPreview = () => {
+    showPreview.value = true;
+    showConfirm.value = false;
+};
+
+const openConfirmation = () => {
+    showConfirm.value = true;
+};
+
+const confirmSubmit = () => {
     form.post(route('passes.store'), {
+        preserveScroll: true,
         onSuccess: () => {
-            // Will redirect to pass show page
+            showPreview.value = false;
+            showConfirm.value = false;
         },
     });
 };

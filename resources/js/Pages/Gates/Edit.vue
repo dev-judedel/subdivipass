@@ -17,7 +17,7 @@
         </div>
 
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-            <form class="space-y-6" @submit.prevent="submit">
+            <form class="space-y-6" @submit.prevent="openMainConfirm">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
@@ -252,7 +252,7 @@
                         <h2 class="text-lg font-semibold text-slate-900">Assigned Guards</h2>
                         <p class="text-sm text-slate-500">Only these guards will see {{ gate.name }} in their scanner.</p>
                     </div>
-                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="assignGuard">
+                    <form class="flex flex-col gap-3 sm:flex-row sm:items-center" @submit.prevent="openAssignConfirm">
                         <select
                             v-model="guardAssignmentForm.user_id"
                             class="rounded-xl border border-slate-200 px-4 py-2 text-sm min-w-[220px]"
@@ -287,7 +287,7 @@
                         <button
                             type="button"
                             class="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-red-400 hover:text-red-500"
-                            @click="removeGuard(guard.id)"
+                            @click="openRemovalConfirm(guard)"
                         >
                             <span class="sr-only">Remove {{ guard.name }}</span>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,12 +330,57 @@
                 <p v-else class="text-sm text-slate-500">No scans recorded for this gate yet.</p>
             </div>
         </div>
+
+        <ConfirmModal
+            v-model="showMainConfirm"
+            title="Save gate changes?"
+            confirm-label="Save Changes"
+            processing-label="Saving..."
+            :loading="form.processing"
+            @confirm="submit"
+        >
+            <p>
+                Apply updates to <span class="font-semibold">{{ form.name }}</span> ({{ form.code }}) in
+                <span class="font-semibold">{{ selectedSubdivisionName }}</span>.
+            </p>
+        </ConfirmModal>
+
+        <ConfirmModal
+            v-model="showAssignConfirm"
+            title="Assign this guard?"
+            confirm-label="Assign Guard"
+            processing-label="Assigning..."
+            :loading="guardAssignmentForm.processing"
+            @confirm="assignGuard"
+        >
+            <p>
+                Give <span class="font-semibold">{{ selectedGuard?.name || 'the selected guard' }}</span>
+                access to <span class="font-semibold">{{ gate.name }}</span>.
+            </p>
+        </ConfirmModal>
+
+        <ConfirmModal
+            v-model="showRemovalConfirm"
+            title="Remove guard access?"
+            confirm-label="Remove Guard"
+            processing-label="Removing..."
+            confirm-variant="danger"
+            :loading="removalProcessing"
+            @confirm="confirmRemoval"
+        >
+            <p>
+                Remove <span class="font-semibold">{{ removalTarget?.name }}</span> from
+                <span class="font-semibold">{{ gate.name }}</span>? They will immediately lose scanner access here.
+            </p>
+        </ConfirmModal>
     </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -376,29 +421,74 @@ const form = useForm({
     settings: { ...props.gate.settings },
 });
 
+const showMainConfirm = ref(false);
+const showAssignConfirm = ref(false);
+const showRemovalConfirm = ref(false);
+const removalTarget = ref(null);
+const removalProcessing = ref(false);
+
+const selectedSubdivisionName = computed(() => {
+    if (!form.subdivision_id) return props.gate.subdivision?.name ?? 'this subdivision';
+    return (
+        props.subdivisionOptions.find((option) => option.id === form.subdivision_id)?.name ??
+        props.gate.subdivision?.name ??
+        'this subdivision'
+    );
+});
+
 const submit = () => {
     form.post(route('gates.update', props.gate.id), {
         preserveScroll: true,
+        onSuccess: () => {
+            showMainConfirm.value = false;
+        },
     });
+};
+
+const openMainConfirm = () => {
+    showMainConfirm.value = true;
 };
 
 const guardAssignmentForm = useForm({
     user_id: '',
 });
 
+const selectedGuard = computed(() =>
+    props.availableGuards.find((guard) => guard.id === guardAssignmentForm.user_id) ?? null
+);
+
+const openAssignConfirm = () => {
+    if (!guardAssignmentForm.user_id) return;
+    showAssignConfirm.value = true;
+};
+
 const assignGuard = () => {
-    if (!guardAssignmentForm.user_id) {
-        return;
-    }
     guardAssignmentForm.post(route('gates.guards.store', props.gate.id), {
         preserveScroll: true,
-        onSuccess: () => guardAssignmentForm.reset('user_id'),
+        onSuccess: () => {
+            guardAssignmentForm.reset('user_id');
+            showAssignConfirm.value = false;
+        },
     });
 };
 
-const removeGuard = (userId) => {
-    router.delete(route('gates.guards.destroy', [props.gate.id, userId]), {
+const openRemovalConfirm = (user) => {
+    removalTarget.value = user;
+    showRemovalConfirm.value = true;
+};
+
+const confirmRemoval = () => {
+    if (!removalTarget.value) return;
+    removalProcessing.value = true;
+    router.delete(route('gates.guards.destroy', [props.gate.id, removalTarget.value.id]), {
         preserveScroll: true,
+        onSuccess: () => {
+            showRemovalConfirm.value = false;
+            removalTarget.value = null;
+        },
+        onFinish: () => {
+            removalProcessing.value = false;
+        },
     });
 };
 

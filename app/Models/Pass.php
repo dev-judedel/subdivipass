@@ -283,7 +283,10 @@ class Pass extends Model
     public function activate(): bool
     {
         if ($this->isApproved() && $this->isValid()) {
-            $this->update(['status' => 'active']);
+            $this->update([
+                'status' => 'active',
+                'activated_at' => $this->activated_at ?? now(),
+            ]);
             return true;
         }
 
@@ -295,7 +298,10 @@ class Pass extends Model
      */
     public function expire(): bool
     {
-        $this->update(['status' => 'expired']);
+        $this->update([
+            'status' => 'expired',
+            'expired_at' => now(),
+        ]);
         return true;
     }
 

@@ -158,14 +158,14 @@
 
                         <div class="grid gap-4 lg:grid-cols-2">
                             <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">
                                         Camera Scanner
                                     </label>
-                                    <div class="flex items-center gap-2 text-xs">
+                                    <div class="flex flex-wrap items-center gap-2 text-xs mb-3">
                                         <select
                                             v-model="selectedCameraId"
-                                            class="rounded-lg border border-slate-700 bg-slate-900/60 px-2 py-1"
+                                            class="rounded-lg border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs"
                                         >
                                             <option
                                                 v-for="device in cameraDevices"
@@ -178,21 +178,22 @@
                                         <button
                                             v-if="scanning"
                                             type="button"
-                                            class="rounded-lg border border-slate-600 px-2 py-1 hover:bg-slate-800 text-xs"
+                                            class="rounded-lg border border-slate-600 px-3 py-1 hover:bg-slate-800 text-xs whitespace-nowrap"
                                             @click="toggleTorch"
                                         >
-                                            Torch {{ torchEnabled ? 'On' : 'Off' }}
+                                            💡 {{ torchEnabled ? 'On' : 'Off' }}
                                         </button>
                                         <button
                                             type="button"
-                                            class="rounded-lg border border-blue-500 px-2 py-1 text-xs font-semibold text-blue-200 hover:bg-blue-500/10"
+                                            class="rounded-lg border px-3 py-1 text-xs font-semibold whitespace-nowrap"
+                                            :class="scanning ? 'border-red-500 text-red-200 hover:bg-red-500/10' : 'border-blue-500 text-blue-200 hover:bg-blue-500/10'"
                                             @click="scanning ? stopScanner() : startScanner()"
                                         >
-                                            {{ scanning ? 'Stop' : 'Start' }}
+                                            {{ scanning ? '⏹ Stop' : '▶ Start' }}
                                         </button>
                                     </div>
                                 </div>
-                                <div class="rounded-2xl border border-slate-800 bg-slate-950/40 overflow-hidden h-64 flex items-center justify-center">
+                                <div class="rounded-2xl border border-slate-800 bg-slate-950/40 overflow-hidden h-64 flex items-center justify-center relative">
                                     <video
                                         ref="videoRef"
                                         class="w-full h-full object-cover"
@@ -306,11 +307,15 @@
                             :key="entry.timestamp"
                             class="flex items-center justify-between rounded-xl border border-slate-800 px-4 py-3 bg-slate-900/50"
                         >
-                            <div>
-                                <p class="font-semibold text-white">{{ entry.visitor_name || entry.code }}</p>
-                                <p class="text-xs text-slate-400">Pass #{{ entry.pass_number || 'N/A' }}</p>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white truncate">
+                                    {{ entry.visitor_name || (entry.code?.length > 30 ? entry.code.substring(0, 30) + '...' : entry.code) }}
+                                </p>
+                                <p class="text-xs text-slate-400 truncate">
+                                    Pass #{{ entry.pass_number && entry.pass_number.length < 50 ? entry.pass_number : 'Processing...' }}
+                                </p>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right ml-3 flex-shrink-0">
                                 <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full" :class="badgeClass(entry.result)">
                                     {{ entry.result }}
                                 </span>
@@ -701,6 +706,80 @@ const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
 const offlineQueue = ref(JSON.parse(typeof window !== 'undefined' ? window.localStorage.getItem('guardOfflineScans') ?? '[]' : '[]'));
 const localScanHistory = ref(JSON.parse(typeof window !== 'undefined' ? window.localStorage.getItem('guardScanHistory') ?? '[]' : '[]'));
 
+// Audio feedback
+const playSound = (type) => {
+    if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return;
+
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Different sounds for different results
+        if (type === 'success') {
+            // Success: Two ascending beeps
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        } else if (type === 'warning') {
+            // Warning: Single medium beep
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } else {
+            // Error: Two descending beeps
+            oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+    } catch (error) {
+        // Audio not supported or failed
+    }
+};
+
+// Visual flash feedback
+const showFlashFeedback = (type) => {
+    if (typeof window === 'undefined') return;
+
+    const color = type === 'success' ? 'rgba(34, 197, 94, 0.3)' :
+                  type === 'warning' ? 'rgba(234, 179, 8, 0.3)' :
+                  'rgba(239, 68, 68, 0.3)';
+
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: ${color};
+        pointer-events: none;
+        z-index: 9999;
+        animation: flash 0.3s ease-out;
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = '@keyframes flash { from { opacity: 1; } to { opacity: 0; } }';
+    document.head.appendChild(style);
+    document.body.appendChild(flash);
+
+    setTimeout(() => {
+        document.body.removeChild(flash);
+        document.head.removeChild(style);
+    }, 300);
+};
+
 const saveOfflineQueue = () => {
     if (typeof window !== 'undefined') {
         window.localStorage.setItem('guardOfflineScans', JSON.stringify(offlineQueue.value));
@@ -793,13 +872,14 @@ const submitScan = async () => {
             class: 'text-yellow-300',
             message: 'Scan stored locally. It will sync when you are back online.',
         };
+        playSound('warning');
         scanForm.code = '';
         return;
     }
 
     localAlert.value = null;
     scanForm.was_offline = false;
-    await scanForm.post(route('guard.scans.store'), {
+    scanForm.post(route('guard.scans.store'), {
         preserveScroll: true,
         onSuccess: () => {
             if (scanResult.value?.pass) {
@@ -810,8 +890,14 @@ const submitScan = async () => {
                     scanned_at: new Date().toISOString(),
                 });
             }
+            // Clear the input field immediately after successful submission
             scanForm.code = '';
         },
+        onError: () => {
+            // Play error sound on submission failure
+            playSound('error');
+            showFlashFeedback('error');
+        }
     });
 };
 
@@ -951,12 +1037,28 @@ const handleScanResult = (text) => {
     scanForm.method = 'qr';
     scanForm.code = text;
     submitScan();
-    addToLocalHistory({
+
+    // Parse QR code data for better display
+    let displayData = {
         code: text,
         pass_number: text,
         result: 'scanned',
         scanned_at: new Date().toISOString(),
-    });
+    };
+
+    try {
+        const parsedData = JSON.parse(text);
+        if (parsedData.pass_number) {
+            displayData.pass_number = parsedData.pass_number;
+        }
+        if (parsedData.visitor_name) {
+            displayData.visitor_name = parsedData.visitor_name;
+        }
+    } catch (e) {
+        // Not JSON, keep original text
+    }
+
+    addToLocalHistory(displayData);
     setTimeout(() => {
         scanLock = false;
         resetScanTimeout();
@@ -989,17 +1091,24 @@ watch(selectedCameraId, () => {
 watch(
     scanResult,
     async (value) => {
-        if (value?.pass) {
-            addToLocalHistory({
-                visitor_name: value.pass.visitor_name,
-                pass_number: value.pass.pass_number,
-                result: value.status === 'error' ? 'failed' : value.status,
-                scanned_at: new Date().toISOString(),
-            });
+        if (value) {
+            // Play audio and show visual feedback based on scan result
+            const resultType = value.status === 'error' ? 'error' : value.status;
+            playSound(resultType);
+            showFlashFeedback(resultType);
 
-            if (supportsIndexedDb) {
-                await cachePass(value.pass, [value.input_code, value.pass.pass_number, value.pass.uuid]);
-                await trimCachedPasses(100);
+            if (value.pass) {
+                addToLocalHistory({
+                    visitor_name: value.pass.visitor_name,
+                    pass_number: value.pass.pass_number,
+                    result: value.status === 'error' ? 'failed' : value.status,
+                    scanned_at: new Date().toISOString(),
+                });
+
+                if (supportsIndexedDb) {
+                    await cachePass(value.pass, [value.input_code, value.pass.pass_number, value.pass.uuid]);
+                    await trimCachedPasses(100);
+                }
             }
         }
 

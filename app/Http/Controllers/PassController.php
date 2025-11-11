@@ -222,7 +222,7 @@ class PassController extends Controller
         ]);
 
         try {
-            $this->passService->revokePass($pass, $request->reason);
+            $this->passService->revokePass($pass, $request->user(), $request->reason);
 
             return back()->with('success', 'Pass revoked.');
         } catch (\Exception $e) {

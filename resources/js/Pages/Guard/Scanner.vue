@@ -502,8 +502,11 @@
 
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-white">Recent Scans</h2>
-                <p class="text-xs text-slate-400">Last 10 scans</p>
+                <div>
+                    <h2 class="text-lg font-semibold text-white">Recent Scans</h2>
+                    <p class="text-xs text-slate-400 mt-1">Database records - Refresh page to update</p>
+                </div>
+                <p class="text-xs text-slate-400">Last 10</p>
             </div>
             <div v-if="recentScans.length" class="space-y-4">
                 <div
@@ -558,7 +561,13 @@ const props = defineProps({
 });
 
 const page = usePage();
-const scanResult = computed(() => page.props.flash?.scanResult ?? null);
+const scanResult = computed(() => {
+    const result = page.props.flash?.scanResult ?? null;
+    if (result) {
+        console.log('🔍 scanResult computed:', result);
+    }
+    return result;
+});
 const shiftStatus = computed(() => page.props.flash?.shiftStatus ?? null);
 const issueStatus = computed(() => page.props.flash?.issueStatus ?? null);
 const passActionStatus = computed(() => page.props.flash?.passActionStatus ?? null);
@@ -863,10 +872,19 @@ const handleOnline = () => {
 
 const submitScan = async () => {
     if (!scanForm.code) {
+        console.log('❌ No code to submit');
         return;
     }
 
+    console.log('🚀 submitScan called', {
+        code_length: scanForm.code.length,
+        gate_id: scanForm.gate_id,
+        method: scanForm.method,
+        isOnline: isOnline.value
+    });
+
     if (!isOnline.value) {
+        console.log('⚠️ Offline - queuing scan');
         await queueOfflineScan();
         localAlert.value = {
             class: 'text-yellow-300',
@@ -879,21 +897,29 @@ const submitScan = async () => {
 
     localAlert.value = null;
     scanForm.was_offline = false;
+
+    console.log('📡 Sending POST to backend:', route('guard.scans.store'));
+
     scanForm.post(route('guard.scans.store'), {
         preserveScroll: true,
-        onSuccess: () => {
-            if (scanResult.value?.pass) {
-                addToLocalHistory({
-                    visitor_name: scanResult.value.pass.visitor_name,
-                    pass_number: scanResult.value.pass.pass_number,
-                    result: scanResult.value.status === 'error' ? 'failed' : scanResult.value.status,
-                    scanned_at: new Date().toISOString(),
-                });
+        onSuccess: (page) => {
+            console.log('✅ Backend responded successfully', page);
+            console.log('📦 Flash data:', page.props.flash);
+
+            // Manually trigger the scanResult watch since flash data comes in the response
+            const result = page.props.flash?.scanResult;
+            if (result) {
+                console.log('🔍 Manual trigger - scanResult found:', result);
+                // The computed property and watch should handle this, but let's verify
+            } else {
+                console.warn('⚠️ No scanResult in flash data!');
             }
+
             // Clear the input field immediately after successful submission
             scanForm.code = '';
         },
-        onError: () => {
+        onError: (errors) => {
+            console.error('❌ Backend error:', errors);
             // Play error sound on submission failure
             playSound('error');
             showFlashFeedback('error');
@@ -1034,31 +1060,23 @@ const handleScanResult = (text) => {
         return;
     }
     scanLock = true;
+
+    console.log('📷 Camera detected QR code:', text.substring(0, 100) + '...');
+
     scanForm.method = 'qr';
     scanForm.code = text;
+
+    console.log('📤 Submitting to backend...', {
+        method: scanForm.method,
+        code_length: text.length,
+        gate_id: scanForm.gate_id
+    });
+
     submitScan();
 
-    // Parse QR code data for better display
-    let displayData = {
-        code: text,
-        pass_number: text,
-        result: 'scanned',
-        scanned_at: new Date().toISOString(),
-    };
+    // Don't add to local history here - wait for backend validation result
+    // The watch on scanResult will handle adding to history with correct status
 
-    try {
-        const parsedData = JSON.parse(text);
-        if (parsedData.pass_number) {
-            displayData.pass_number = parsedData.pass_number;
-        }
-        if (parsedData.visitor_name) {
-            displayData.visitor_name = parsedData.visitor_name;
-        }
-    } catch (e) {
-        // Not JSON, keep original text
-    }
-
-    addToLocalHistory(displayData);
     setTimeout(() => {
         scanLock = false;
         resetScanTimeout();
@@ -1092,24 +1110,41 @@ watch(
     scanResult,
     async (value) => {
         if (value) {
+            console.log('✅ Scan result received:', value);
+
             // Play audio and show visual feedback based on scan result
             const resultType = value.status === 'error' ? 'error' : value.status;
             playSound(resultType);
             showFlashFeedback(resultType);
 
-            if (value.pass) {
-                addToLocalHistory({
-                    visitor_name: value.pass.visitor_name,
-                    pass_number: value.pass.pass_number,
-                    result: value.status === 'error' ? 'failed' : value.status,
-                    scanned_at: new Date().toISOString(),
-                });
+            // Always add to local history (even if error/no pass found)
+            const historyEntry = {
+                result: value.status === 'error' ? 'failed' : value.status,
+                scanned_at: new Date().toISOString(),
+                code: value.input_code || 'Unknown',
+            };
 
+            if (value.pass) {
+                // Valid pass - add full details
+                historyEntry.visitor_name = value.pass.visitor_name;
+                historyEntry.pass_number = value.pass.pass_number;
+
+                console.log('✅ Adding to local history:', historyEntry);
+
+                // Cache for offline use
                 if (supportsIndexedDb) {
                     await cachePass(value.pass, [value.input_code, value.pass.pass_number, value.pass.uuid]);
                     await trimCachedPasses(100);
                 }
+            } else {
+                // Invalid/error - show the input code that was scanned
+                historyEntry.pass_number = value.input_code || 'Invalid';
+                historyEntry.visitor_name = 'Not Found';
+                console.log('⚠️ No pass found, adding error to local history:', historyEntry);
             }
+
+            addToLocalHistory(historyEntry);
+            console.log('📝 Local history updated. Total entries:', localScanHistory.value.length);
         }
 
         rejectForm.reset('reason');

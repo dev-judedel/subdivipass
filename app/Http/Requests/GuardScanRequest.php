@@ -22,7 +22,7 @@ class GuardScanRequest extends FormRequest
     {
         return [
             'gate_id' => ['required', 'exists:gates,id'],
-            'code' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:1000'], // Increased to handle QR JSON data
             'method' => ['required', 'in:qr,pin,pass_number'],
             'scan_type' => ['nullable', 'in:entry,exit,validation'],
             'device_id' => ['nullable', 'string', 'max:255'],

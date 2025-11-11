@@ -205,6 +205,11 @@ class Pass extends Model
         return $this->status === 'approved' || $this->status === 'active';
     }
 
+    public function isBlacklisted(): bool
+    {
+        return (bool) ($this->metadata['blacklisted'] ?? false);
+    }
+
     /**
      * Check if pass is pending approval.
      */

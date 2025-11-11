@@ -57,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/passes/{pass}/reject', [GuardScannerController::class, 'rejectPass'])->name('guard.passes.reject');
         Route::post('/push-subscriptions', [GuardPushSubscriptionController::class, 'store'])->name('guard.push-subscriptions.store');
         Route::delete('/push-subscriptions', [GuardPushSubscriptionController::class, 'destroy'])->name('guard.push-subscriptions.destroy');
+        Route::post('/pin/validate', [GuardScannerController::class, 'validatePin'])->name('guard.pin.validate');
     });
 
     // Employee/Admin routes - Pass Management

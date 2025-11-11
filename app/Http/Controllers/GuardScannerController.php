@@ -8,9 +8,9 @@ use App\Http\Requests\GuardShiftRequest;
 use App\Models\Gate;
 use App\Models\GuardIssueReport;
 use App\Models\GuardShift;
-use App\Models\Pass;
 use App\Models\PassScan;
 use App\Services\PassService;
+use App\Services\ValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,7 +18,10 @@ use Inertia\Response;
 
 class GuardScannerController extends Controller
 {
-    public function __construct(private PassService $passService)
+    public function __construct(
+        private PassService $passService,
+        private ValidationService $validationService
+    )
     {
     }
 
@@ -72,58 +75,86 @@ class GuardScannerController extends Controller
         $gate = Gate::where('status', 'active')->findOrFail($data['gate_id']);
         $this->ensureGateAssignment($gate->id, $guard->gate_ids);
 
-        $pass = $this->findPass($data['method'], $data['code']);
-        if (!$pass) {
+        $wasOffline = filter_var($request->input('was_offline', false), FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $result = $this->validationService->validate([
+                'method' => $data['method'],
+                'code' => $data['code'],
+                'gate' => $gate,
+                'guard' => $guard,
+                'scan_type' => $data['scan_type'] ?? 'entry',
+                'device_id' => $data['device_id'] ?? null,
+                'was_offline' => $wasOffline,
+                'ip' => $request->ip(),
+            ]);
+        } catch (\Throwable $exception) {
+            $message = 'Unable to validate pass at the moment.';
+
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
+                $message = collect($exception->errors())->flatten()->first() ?? $message;
+            }
+
             return redirect()
                 ->route('guard.scanner')
                 ->with('scanResult', [
                     'status' => 'error',
-                    'message' => 'Pass not found. Please verify the code or PIN.',
+                    'message' => $message,
                 ]);
         }
 
-        $evaluation = $this->evaluatePass($pass, $gate);
+        $pass = $result['pass'] ?? null;
 
-        PassScan::create([
-            'pass_id' => $pass->id,
-            'gate_id' => $gate->id,
-            'guard_id' => $guard->id,
-            'scan_type' => $data['scan_type'] ?? 'entry',
-            'scan_method' => $data['method'],
-            'result' => $this->mapResult($evaluation['status']),
-            'result_message' => $evaluation['message'],
-            'scan_data' => [
-                'input' => $data['code'],
-            ],
-            'device_id' => $data['device_id'] ?? null,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->header('User-Agent'),
-            'location' => null,
-            'was_offline' => filter_var($request->input('was_offline', false), FILTER_VALIDATE_BOOLEAN),
-            'scanned_at' => now(),
-        ]);
+        if ($pass) {
+            PassScan::create([
+                'pass_id' => $pass->id,
+                'gate_id' => $gate->id,
+                'guard_id' => $guard->id,
+                'scan_type' => $data['scan_type'] ?? 'entry',
+                'scan_method' => $data['method'],
+                'result' => $this->mapResult($result['status']),
+                'result_message' => $result['message'],
+                'scan_data' => array_merge(
+                    $result['scan_data'] ?? [],
+                    ['attempt_id' => $result['attempt_id'] ?? null]
+                ),
+                'device_id' => $data['device_id'] ?? null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'location' => null,
+                'was_offline' => $wasOffline,
+                'scanned_at' => now(),
+            ]);
 
-        if ($evaluation['status'] !== 'error') {
-            $pass->recordScan($gate, $guard);
+            if ($result['status'] === 'success') {
+                $pass->recordScan($gate, $guard);
+            }
         }
 
         return redirect()
             ->route('guard.scanner')
-            ->with('scanResult', array_merge($evaluation, [
-                'pass' => [
+            ->with('scanResult', [
+                'status' => $result['status'],
+                'message' => $result['message'],
+                'pass' => $pass ? [
                     'id' => $pass->id,
                     'pass_number' => $pass->pass_number,
                     'visitor_name' => $pass->visitor_name,
                     'status' => $pass->status,
                     'valid_to' => $pass->valid_to,
                     'uuid' => $pass->uuid,
-                ],
+                ] : null,
                 'gate' => [
                     'id' => $gate->id,
                     'name' => $gate->name,
                 ],
                 'input_code' => $data['code'],
-            ]));
+            ]);
+    }
+
+    public function validatePin(GuardScanRequest $request): RedirectResponse
+    {
+        return $this->store($request);
     }
 
     public function startShift(GuardShiftRequest $request): RedirectResponse
@@ -246,67 +277,6 @@ class GuardScannerController extends Controller
                 'status' => 'warning',
                 'message' => 'Pass rejected.',
             ]);
-    }
-
-    protected function findPass(string $method, string $code): ?Pass
-    {
-        return match ($method) {
-            'pin' => Pass::where('pin', $code)->first(),
-            'pass_number' => Pass::where('pass_number', $code)->first(),
-            default => Pass::where('uuid', $code)
-                ->orWhere('pass_number', $code)
-                ->first(),
-        };
-    }
-
-    protected function evaluatePass(Pass $pass, Gate $gate): array
-    {
-        if ($pass->status === 'revoked') {
-            return [
-                'status' => 'error',
-                'message' => 'This pass has been revoked.',
-            ];
-        }
-
-        if ($pass->isExpired()) {
-            return [
-                'status' => 'error',
-                'message' => 'Pass is expired.',
-            ];
-        }
-
-        if (!$pass->isApproved()) {
-            return [
-                'status' => 'error',
-                'message' => 'Pass is not approved or active yet.',
-            ];
-        }
-
-        if ($pass->subdivision_id !== $gate->subdivision_id) {
-            return [
-                'status' => 'warning',
-                'message' => 'Pass belongs to a different subdivision.',
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'message' => 'Pass validated successfully.',
-        ];
-    }
-
-    protected function resolvePassId(?string $code): ?int
-    {
-        if (blank($code)) {
-            return null;
-        }
-
-        $pass = Pass::where('pass_number', $code)
-            ->orWhere('pin', $code)
-            ->orWhere('uuid', $code)
-            ->first();
-
-        return $pass?->id;
     }
 
     protected function ensureGateAssignment(int $gateId, $assignedGateIds): void

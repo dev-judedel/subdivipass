@@ -25,6 +25,13 @@ class StoreGateRequest extends FormRequest
             'coordinates' => ['nullable', 'array'],
             'coordinates.lat' => ['nullable', 'numeric', 'between:-90,90'],
             'coordinates.lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'settings' => ['nullable', 'array'],
+            'settings.requires_incident_report' => ['nullable', 'boolean'],
+            'settings.auto_notify_admin' => ['nullable', 'boolean'],
+            'settings.allow_manual_entry' => ['nullable', 'boolean'],
+            'settings.enforce_device_lock' => ['nullable', 'boolean'],
+            'settings.max_scan_per_minute' => ['nullable', 'integer', 'min:10', 'max:300'],
+            'settings.guard_instructions' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

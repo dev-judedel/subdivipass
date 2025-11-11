@@ -26,6 +26,7 @@ class Gate extends Model
         'type',
         'status',
         'notes',
+        'settings',
     ];
 
     /**
@@ -97,5 +98,34 @@ class Gate extends Model
     public function allowsExit(): bool
     {
         return in_array($this->type, ['exit', 'both']);
+    }
+
+    public function getSettingsAttribute($value): array
+    {
+        if (is_array($value)) {
+            $settings = $value;
+        } else {
+            $settings = json_decode($value ?? '[]', true) ?? [];
+        }
+
+        return array_merge($this->defaultSettings(), $settings);
+    }
+
+    public function setSettingsAttribute($value): void
+    {
+        $settings = array_merge($this->defaultSettings(), $value ?? []);
+        $this->attributes['settings'] = json_encode($settings);
+    }
+
+    public function defaultSettings(): array
+    {
+        return [
+            'requires_incident_report' => false,
+            'auto_notify_admin' => false,
+            'allow_manual_entry' => true,
+            'enforce_device_lock' => false,
+            'max_scan_per_minute' => 60,
+            'guard_instructions' => '',
+        ];
     }
 }

@@ -11,6 +11,13 @@ class GuardScanRequest extends FormRequest
         return $this->user()?->hasRole('guard') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('method') && $this->routeIs('guard.pin.validate')) {
+            $this->merge(['method' => 'pin']);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -19,6 +26,7 @@ class GuardScanRequest extends FormRequest
             'method' => ['required', 'in:qr,pin,pass_number'],
             'scan_type' => ['nullable', 'in:entry,exit,validation'],
             'device_id' => ['nullable', 'string', 'max:255'],
+            'was_offline' => ['nullable', 'boolean'],
         ];
     }
 }

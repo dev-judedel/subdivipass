@@ -147,6 +147,91 @@
                 </div>
             </div>
 
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Gate-specific Settings</h2>
+                    <p class="text-sm text-slate-500">Fine-tune how this gate behaves for guards and alerts.</p>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+                        <input
+                            v-model="form.settings.requires_incident_report"
+                            type="checkbox"
+                            class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                            <span class="font-semibold text-slate-900 block">Require incident report</span>
+                            <span class="text-sm text-slate-500">
+                                Guard must log an incident summary before ending shifts at this gate.
+                            </span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+                        <input
+                            v-model="form.settings.auto_notify_admin"
+                            type="checkbox"
+                            class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                            <span class="font-semibold text-slate-900 block">Auto notify admins</span>
+                            <span class="text-sm text-slate-500">
+                                Send push/email alerts when warnings or failures happen at this gate.
+                            </span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+                        <input
+                            v-model="form.settings.allow_manual_entry"
+                            type="checkbox"
+                            class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                            <span class="font-semibold text-slate-900 block">Allow manual PIN entry</span>
+                            <span class="text-sm text-slate-500">
+                                Disable if this gate should only use QR scanning.
+                            </span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+                        <input
+                            v-model="form.settings.enforce_device_lock"
+                            type="checkbox"
+                            class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                            <span class="font-semibold text-slate-900 block">Enforce device lock</span>
+                            <span class="text-sm text-slate-500">
+                                Guards must register their device ID before scanning.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700">Max scans per minute</label>
+                        <input
+                            v-model.number="form.settings.max_scan_per_minute"
+                            type="number"
+                            min="10"
+                            max="300"
+                            class="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm"
+                        />
+                        <p class="text-xs text-slate-500 mt-1">
+                            Used for duplicate-scan suppression alerts.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700">Guard instructions</label>
+                        <textarea
+                            v-model="form.settings.guard_instructions"
+                            rows="3"
+                            class="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm"
+                            placeholder="Remind guards about delivery lanes, visitor parking, etc."
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center justify-end gap-3">
                 <Link
                     :href="route('gates.index')"
@@ -176,6 +261,17 @@ const props = defineProps({
     statusOptions: { type: Array, default: () => [] },
     typeOptions: { type: Array, default: () => [] },
     subdivisionOptions: { type: Array, default: () => [] },
+    defaultSettings: {
+        type: Object,
+        default: () => ({
+            requires_incident_report: false,
+            auto_notify_admin: false,
+            allow_manual_entry: true,
+            enforce_device_lock: false,
+            max_scan_per_minute: 60,
+            guard_instructions: '',
+        }),
+    },
 });
 
 const form = useForm({
@@ -190,6 +286,7 @@ const form = useForm({
         lat: '',
         lng: '',
     },
+    settings: { ...props.defaultSettings },
 });
 
 const submit = () => {

@@ -68,6 +68,7 @@ class GateController extends Controller
             'statusOptions' => ['active', 'inactive', 'maintenance'],
             'typeOptions' => ['entry', 'exit', 'both'],
             'subdivisionOptions' => Subdivision::orderBy('name')->get(['id', 'name']),
+            'defaultSettings' => (new Gate())->defaultSettings(),
         ]);
     }
 
@@ -75,9 +76,13 @@ class GateController extends Controller
     {
         $data = $request->validated();
         $coordinates = $this->normalizeCoordinates($data['coordinates'] ?? null);
-        unset($data['coordinates']);
+        $settings = $this->normalizeSettings($data['settings'] ?? null);
+        unset($data['coordinates'], $data['settings']);
 
-        Gate::create(array_merge($data, ['coordinates' => $coordinates]));
+        Gate::create(array_merge($data, [
+            'coordinates' => $coordinates,
+            'settings' => $settings,
+        ]));
 
         return redirect()
             ->route('gates.index')
@@ -139,6 +144,7 @@ class GateController extends Controller
                     'lat' => $gate->coordinates['lat'] ?? null,
                     'lng' => $gate->coordinates['lng'] ?? null,
                 ],
+                'settings' => $gate->settings,
             ],
             'statusOptions' => ['active', 'inactive', 'maintenance'],
             'typeOptions' => ['entry', 'exit', 'both'],
@@ -146,6 +152,7 @@ class GateController extends Controller
             'assignedGuards' => $assignedGuards,
             'availableGuards' => $availableGuards,
             'recentActivity' => $recentActivity,
+            'defaultSettings' => (new Gate())->defaultSettings(),
         ]);
     }
 
@@ -153,9 +160,13 @@ class GateController extends Controller
     {
         $data = $request->validated();
         $coordinates = $this->normalizeCoordinates($data['coordinates'] ?? null);
-        unset($data['coordinates']);
+        $settings = $this->normalizeSettings($data['settings'] ?? null);
+        unset($data['coordinates'], $data['settings']);
 
-        $gate->update(array_merge($data, ['coordinates' => $coordinates]));
+        $gate->update(array_merge($data, [
+            'coordinates' => $coordinates,
+            'settings' => $settings,
+        ]));
 
         return redirect()
             ->route('gates.index')
@@ -190,6 +201,20 @@ class GateController extends Controller
         return [
             'lat' => $lat !== null ? (float)$lat : null,
             'lng' => $lng !== null ? (float)$lng : null,
+        ];
+    }
+
+    private function normalizeSettings(?array $settings): array
+    {
+        $defaults = (new Gate())->defaultSettings();
+
+        return [
+            'requires_incident_report' => (bool) ($settings['requires_incident_report'] ?? $defaults['requires_incident_report']),
+            'auto_notify_admin' => (bool) ($settings['auto_notify_admin'] ?? $defaults['auto_notify_admin']),
+            'allow_manual_entry' => (bool) ($settings['allow_manual_entry'] ?? $defaults['allow_manual_entry']),
+            'enforce_device_lock' => (bool) ($settings['enforce_device_lock'] ?? $defaults['enforce_device_lock']),
+            'max_scan_per_minute' => (int) ($settings['max_scan_per_minute'] ?? $defaults['max_scan_per_minute']),
+            'guard_instructions' => $settings['guard_instructions'] ?? $defaults['guard_instructions'],
         ];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\GateGuardAssignmentController;
 use App\Http\Controllers\GuardIssueReportController;
@@ -42,9 +43,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
     // Dashboard - main landing after login
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Guard routes
     Route::prefix('guard')->middleware('role:guard')->group(function () {

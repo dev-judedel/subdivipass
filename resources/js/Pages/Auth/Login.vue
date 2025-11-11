@@ -166,6 +166,9 @@ const form = useForm({
 
 const submit = () => {
     form.post('/login', {
+        preserveState: false,
+        preserveScroll: false,
+        replace: true,
         onFinish: () => {
             form.password = '';
         },

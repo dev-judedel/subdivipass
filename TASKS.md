@@ -34,7 +34,7 @@
   - `[COMPLETED]` @zxing/browser and @zxing/library
 - `[COMPLETED]` Configure Vite for Vue and Inertia - Date: 2024-11-09
 - `[COMPLETED]` Set up Tailwind CSS with custom configuration - Date: 2024-11-09
-- `[TODO]` Create base layout templates
+- `[COMPLETED]` Create base layout templates - Date: 2025-11-11
 
 ### Database Design
 - `[COMPLETED]` Design complete database schema - Date: 2024-11-09
@@ -299,30 +299,25 @@
 ## 📌 MILESTONE 7: ADMIN DASHBOARD (Weeks 7-8)
 
 ### Dashboard Components
-- `[TODO]` Create admin layout template
-- `[TODO]` Build statistics overview cards
-- `[TODO]` Implement real-time updates (WebSocket)
-- `[TODO]` Add activity feed
-- `[TODO]` Create quick actions panel
-- `[TODO]` Build charts with Chart.js:
+- `[COMPLETED]` Build executive summary cards (passes today, approvals, guard alerts) - Date: 2025-11-11
+- `[COMPLETED]` Add pass/guard activity feed with filters - Date: 2025-11-11
+- `[TODO]` Implement Chart.js visualizations:
   - `[TODO]` Daily pass creation chart
-  - `[TODO]` Pass type distribution
-  - `[TODO]` Gate activity heatmap
-  - `[TODO]` Validation success rate
+  - `[TODO]` Pass type mix
+  - `[TODO]` Gate validation heatmap
+  - `[TODO]` Validation success vs failure
+- `[COMPLETED]` Create quick actions (new pass, approve queue, broadcast alert) - Date: 2025-11-11
 - `[TODO]` Add date range filters
-- `[TODO]` Create export functionality
+- `[TODO]` Wire real-time refresh (Pusher/WebSockets)
+- `[TODO]` Add export/download (CSV/PDF)
 
 ### Pass Management Interface
-- `[TODO]` Build pass listing with filters
-- `[TODO]` Add advanced search
-- `[TODO]` Create bulk operations
-- `[TODO]` Implement pass approval queue
-- `[TODO]` Add quick approve/reject
-- `[TODO]` Build pass detail modal
-- `[TODO]` Create pass edit functionality
-- `[TODO]` Add pass duplication
-- `[TODO]` Implement mass import
-- `[TODO]` Create templates system
+- `[TODO]` Enhance pass list (inline status chips, quick filters)
+- `[TODO]` Add advanced search (visitor, vehicle, phone)
+- `[TODO]` Build approval queue view with batch actions
+- `[TODO]` Implement bulk operations (approve, revoke, extend)
+- `[TODO]` Add pass duplication + template shortcuts
+- `[TODO]` Support CSV import/export
 
 ### User & Role Management
 - `[COMPLETED]` Implement user search and filtering - Date: 2024-11-10

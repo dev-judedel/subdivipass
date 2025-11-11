@@ -113,8 +113,8 @@ A mobile-first PWA that enables:
 - Pass type configuration
 - Pass creation system
 - QR code generation
-- Subdivision management
-- Gate configuration
+- Subdivision management ✅ Admin CRUD with logo upload, guard policy settings, and stats (Nov 11, 2025)
+- Gate configuration ✅ CRUD with subdivision assignment, coordinates, and status tracking (Nov 11, 2025)
 
 ### Phase 4: Guard Interface (Weeks 5-7)
 - PWA setup *(completed: manifest, Workbox service worker, install prompt, push opt-in, and app shell caching now live)*

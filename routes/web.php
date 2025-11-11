@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\GateController;
 use App\Http\Controllers\GuardIssueReportController;
 use App\Http\Controllers\GuardPushSubscriptionController;
 use App\Http\Controllers\GuardScannerController;
+use App\Http\Controllers\SubdivisionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -81,6 +83,8 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('roles', \App\Http\Controllers\RoleController::class)->except(['show']);
         Route::get('roles/activity', [\App\Http\Controllers\RoleController::class, 'activity'])->name('roles.activity');
         Route::resource('guard-issues', GuardIssueReportController::class)->only(['index', 'show', 'update']);
+        Route::resource('subdivisions', SubdivisionController::class)->except(['show']);
+        Route::resource('gates', GateController::class)->except(['show']);
 
         // Additional user actions
         Route::post('users/{user}/change-status', [\App\Http\Controllers\UserController::class, 'changeStatus'])

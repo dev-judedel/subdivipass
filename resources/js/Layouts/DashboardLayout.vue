@@ -93,6 +93,18 @@ const navigation = computed(() => [
         active: page.url.startsWith('/roles'),
         show: hasRole(['admin', 'super-admin']),
     },
+    {
+        label: 'Subdivisions',
+        href: route('subdivisions.index'),
+        active: page.url.startsWith('/subdivisions'),
+        show: hasRole(['admin', 'super-admin']),
+    },
+    {
+        label: 'Gates',
+        href: route('gates.index'),
+        active: page.url.startsWith('/gates'),
+        show: hasRole(['admin', 'super-admin']),
+    },
 ]);
 
 const visibleNavigation = computed(() => navigation.value.filter(item => item.show));

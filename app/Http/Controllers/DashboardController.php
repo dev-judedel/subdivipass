@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Gate;
 use App\Models\GuardIssueReport;
 use App\Models\GuardShift;
 use App\Models\Pass;
 use App\Models\PassLog;
 use App\Models\PassScan;
+use App\Models\Subdivision;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,6 +26,13 @@ class DashboardController extends Controller
                 ->count(),
             'open_guard_issues' => GuardIssueReport::where('status', 'open')->count(),
             'active_guard_shifts' => GuardShift::active()->count(),
+            'today_scans' => PassScan::whereDate('scanned_at', today())->count(),
+            'today_successful_scans' => PassScan::whereDate('scanned_at', today())
+                ->where('result', 'success')
+                ->count(),
+            'today_failed_scans' => PassScan::whereDate('scanned_at', today())
+                ->where('result', 'error')
+                ->count(),
         ];
 
         $pendingApprovals = Pass::with(['requester:id,name', 'type:id,name', 'subdivision:id,name'])
@@ -76,12 +85,65 @@ class DashboardController extends Controller
                 'created_at' => $issue->created_at?->diffForHumans(),
             ]);
 
+        // Subdivision breakdown
+        $subdivisionStats = Subdivision::withCount([
+            'passes as total_passes',
+            'passes as active_passes' => fn ($q) => $q->where('status', 'active'),
+        ])->limit(5)->get()->map(fn ($subdivision) => [
+            'name' => $subdivision->name,
+            'total_passes' => $subdivision->total_passes,
+            'active_passes' => $subdivision->active_passes,
+        ]);
+
+        // Today's scan activity by hour
+        $todayScans = PassScan::whereDate('scanned_at', today())
+            ->selectRaw('HOUR(scanned_at) as hour, COUNT(*) as total, result')
+            ->groupBy('hour', 'result')
+            ->orderBy('hour')
+            ->get()
+            ->groupBy('hour')
+            ->map(function ($hourScans, $hour) {
+                return [
+                    'hour' => Carbon::createFromTime($hour)->format('ha'),
+                    'successful' => $hourScans->where('result', 'success')->sum('total'),
+                    'failed' => $hourScans->where('result', 'error')->sum('total'),
+                    'warning' => $hourScans->where('result', 'warning')->sum('total'),
+                    'total' => $hourScans->sum('total'),
+                ];
+            })->values();
+
+        // Active guards on duty
+        $activeGuards = GuardShift::with(['guardUser:id,name', 'gate:id,name'])
+            ->active()
+            ->get()
+            ->map(fn ($shift) => [
+                'guard_name' => $shift->guardUser?->name,
+                'gate_name' => $shift->gate?->name,
+                'started_at' => $shift->started_at?->diffForHumans(),
+                'duration' => $shift->started_at?->diffInHours(now()) . ' hours',
+            ]);
+
+        // Pass type distribution
+        $passByType = Pass::selectRaw('pass_types.name as type_name, COUNT(*) as count')
+            ->join('pass_types', 'passes.pass_type_id', '=', 'pass_types.id')
+            ->where('passes.status', 'active')
+            ->groupBy('pass_types.name')
+            ->get()
+            ->map(fn ($item) => [
+                'type' => $item->type_name,
+                'count' => $item->count,
+            ]);
+
         return Inertia::render('Dashboard', [
             'stats' => $stats,
             'pendingApprovals' => $pendingApprovals,
             'recentActivity' => $recentActivity,
             'passesByDay' => $passesByDay,
             'guardAlerts' => $guardAlerts,
+            'subdivisionStats' => $subdivisionStats,
+            'todayScans' => $todayScans,
+            'activeGuards' => $activeGuards,
+            'passByType' => $passByType,
         ]);
     }
 }

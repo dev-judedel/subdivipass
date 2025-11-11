@@ -23,12 +23,29 @@ use Inertia\Inertia;
 |
 */
 
+// Root route - redirect based on auth status
+Route::get('/', function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+
+        if ($user->hasRole('super-admin') || $user->hasRole('admin')) {
+            return redirect()->route('dashboard');
+        } elseif ($user->hasRole('guard')) {
+            return redirect()->route('guard.scanner');
+        } elseif ($user->hasRole('employee')) {
+            return redirect()->route('passes.index');
+        } elseif ($user->hasRole('requester')) {
+            return redirect()->route('requester.passes');
+        }
+
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login');
+});
+
 // Guest routes
 Route::middleware('guest')->group(function () {
-    Route::get('/', function () {
-        return redirect('/login');
-    });
-
     Route::get('/home', function () {
         return redirect()->route('dashboard');
     })->name('home');

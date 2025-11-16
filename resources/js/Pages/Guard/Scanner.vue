@@ -310,7 +310,11 @@
                             v-for="worker in scanResult.pass.workers"
                             :key="worker.id"
                             class="flex items-center gap-3 p-3 rounded-xl border transition"
-                            :class="worker.is_admitted ? 'border-green-500/40 bg-green-500/10' : 'border-slate-700 bg-slate-900/50 hover:border-purple-500/40'"
+                            :class="[
+                                worker.id === scanResult.scanned_worker_id ? 'border-yellow-500/60 bg-yellow-500/20 ring-2 ring-yellow-500/40' :
+                                worker.is_admitted ? 'border-green-500/40 bg-green-500/10' :
+                                'border-slate-700 bg-slate-900/50 hover:border-purple-500/40'
+                            ]"
                         >
                             <!-- Worker Photo -->
                             <div class="flex-shrink-0">
@@ -352,7 +356,7 @@
                                 </div>
                             </div>
 
-                            <!-- Admit Button -->
+                            <!-- Admit/Exit Buttons -->
                             <div class="flex-shrink-0">
                                 <button
                                     v-if="!worker.is_admitted && scanResult.status === 'success'"
@@ -363,9 +367,15 @@
                                 >
                                     {{ admittingWorker === worker.id ? 'Admitting...' : 'Admit' }}
                                 </button>
-                                <span v-else-if="worker.is_admitted" class="text-green-300 text-sm font-semibold">
-                                    Inside
-                                </span>
+                                <button
+                                    v-else-if="worker.is_admitted && scanResult.status === 'success'"
+                                    type="button"
+                                    class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition disabled:opacity-50"
+                                    @click="exitWorker(worker.id)"
+                                    :disabled="exitingWorker === worker.id"
+                                >
+                                    {{ exitingWorker === worker.id ? 'Exiting...' : 'Exit' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -375,7 +385,8 @@
                         <ul class="list-disc list-inside space-y-1 text-slate-400">
                             <li>Verify worker's identity with their photo and ID</li>
                             <li>Click "Admit" to grant entry to the worker</li>
-                            <li>Workers already admitted will show "Inside" status</li>
+                            <li>Click "Exit" to mark worker as left</li>
+                            <li>Scan individual worker QR codes for quick admission</li>
                         </ul>
                     </div>
                 </div>
@@ -1104,6 +1115,42 @@ const admitWorker = (workerId) => {
             },
             onFinish: () => {
                 admittingWorker.value = null;
+            },
+        }
+    );
+};
+
+// Worker Pass - Exit individual worker
+const exitingWorker = ref(null);
+const exitWorker = (workerId) => {
+    if (!scanResult.value?.pass || !scanForm.gate_id || exitingWorker.value) {
+        return;
+    }
+
+    exitingWorker.value = workerId;
+
+    // Use Inertia router to make the request
+    router.post(
+        route('guard.workers.exit', { worker: workerId }),
+        {
+            gate_id: scanForm.gate_id,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                console.log('✅ Worker exited successfully');
+                exitingWorker.value = null;
+
+                // Refresh scan result to update worker admission status
+                // The backend will return updated pass data with worker statuses
+            },
+            onError: (errors) => {
+                console.error('❌ Failed to exit worker:', errors);
+                exitingWorker.value = null;
+                alert(errors.message || 'Failed to exit worker. Please try again.');
+            },
+            onFinish: () => {
+                exitingWorker.value = null;
             },
         }
     );

@@ -160,97 +160,194 @@
                         </dl>
                     </div>
 
-                    <!-- Worker List (Worker Pass) -->
+                    <!-- Worker List (Worker Pass) - ENHANCED VERSION -->
                     <div v-if="pass.pass_mode === 'group' && pass.workers && pass.workers.length > 0" class="bg-white rounded-lg shadow-sm p-6">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-lg font-semibold text-gray-900">Workers</h2>
-                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                {{ pass.workers.length }} Worker{{ pass.workers.length !== 1 ? 's' : '' }}
-                            </span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm text-gray-500">
+                                    {{ admittedWorkersCount }} / {{ pass.workers.length }} admitted
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    {{ pass.workers.length }} Worker{{ pass.workers.length !== 1 ? 's' : '' }}
+                                </span>
+                            </div>
                         </div>
                         <div class="space-y-4">
                             <div
                                 v-for="worker in pass.workers"
                                 :key="worker.id"
-                                class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition"
+                                class="border border-gray-200 rounded-lg overflow-hidden hover:border-purple-300 transition"
                             >
-                                <div class="flex items-start gap-4">
-                                    <!-- Worker Photo -->
-                                    <div class="flex-shrink-0">
-                                        <div
-                                            v-if="worker.photo_url"
-                                            class="w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200"
-                                        >
-                                            <img :src="worker.photo_url" :alt="worker.worker_name" class="w-full h-full object-cover" />
+                                <!-- Worker Card Header -->
+                                <div class="p-4 bg-gradient-to-r from-gray-50 to-white">
+                                    <div class="flex items-start gap-4">
+                                        <!-- Worker Photo -->
+                                        <div class="flex-shrink-0">
+                                            <div
+                                                v-if="worker.photo_url"
+                                                class="w-20 h-20 rounded-lg overflow-hidden border-2"
+                                                :class="worker.is_admitted ? 'border-green-400' : 'border-gray-200'"
+                                            >
+                                                <img :src="worker.photo_url" :alt="worker.worker_name" class="w-full h-full object-cover" />
+                                            </div>
+                                            <div
+                                                v-else
+                                                class="w-20 h-20 rounded-lg bg-gray-100 border-2 flex items-center justify-center"
+                                                :class="worker.is_admitted ? 'border-green-400' : 'border-gray-200'"
+                                            >
+                                                <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
                                         </div>
-                                        <div
-                                            v-else
-                                            class="w-20 h-20 rounded-lg bg-gray-100 border-2 border-gray-200 flex items-center justify-center"
-                                        >
-                                            <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
+
+                                        <!-- Worker Details -->
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <h3 class="text-base font-semibold text-gray-900">{{ worker.worker_name }}</h3>
+                                                <span
+                                                    v-if="worker.is_admitted"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800"
+                                                >
+                                                    <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Inside
+                                                </span>
+                                                <span
+                                                    :class="worker.status === 'active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'"
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
+                                                >
+                                                    {{ worker.status }}
+                                                </span>
+                                            </div>
+                                            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                                <div v-if="worker.worker_position">
+                                                    <dt class="text-xs text-gray-500">Position</dt>
+                                                    <dd class="text-gray-900">{{ worker.worker_position }}</dd>
+                                                </div>
+                                                <div v-if="worker.worker_id_number">
+                                                    <dt class="text-xs text-gray-500">ID Number</dt>
+                                                    <dd class="text-gray-900 font-mono">{{ worker.worker_id_number }}</dd>
+                                                </div>
+                                                <div v-if="worker.worker_contact">
+                                                    <dt class="text-xs text-gray-500">Contact</dt>
+                                                    <dd class="text-gray-900">{{ worker.worker_contact }}</dd>
+                                                </div>
+                                                <div v-if="worker.worker_email">
+                                                    <dt class="text-xs text-gray-500">Email</dt>
+                                                    <dd class="text-gray-900 truncate">{{ worker.worker_email }}</dd>
+                                                </div>
+                                                <div v-if="worker.last_scan_at">
+                                                    <dt class="text-xs text-gray-500">Last Scan</dt>
+                                                    <dd class="text-gray-900">{{ formatDate(worker.last_scan_at) }}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt class="text-xs text-gray-500">Total Scans</dt>
+                                                    <dd class="text-gray-900">{{ worker.total_scans || 0 }}</dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+
+                                        <!-- QR Code Preview -->
+                                        <div v-if="worker.qr_code_url" class="flex-shrink-0">
+                                            <button
+                                                @click="showWorkerQR(worker)"
+                                                class="group relative w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-purple-400 transition"
+                                            >
+                                                <img :src="worker.qr_code_url" alt="Worker QR" class="w-full h-full object-cover" />
+                                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition flex items-center justify-center">
+                                                    <svg class="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                    </svg>
+                                                </div>
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <!-- Worker Details -->
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <h3 class="text-base font-semibold text-gray-900">{{ worker.worker_name }}</h3>
-                                            <span
-                                                v-if="worker.is_admitted"
-                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800"
-                                            >
-                                                Admitted
-                                            </span>
-                                            <span
-                                                :class="worker.status === 'active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'"
-                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
-                                            >
-                                                {{ worker.status }}
-                                            </span>
-                                        </div>
-                                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                            <div v-if="worker.worker_position">
-                                                <dt class="text-xs text-gray-500">Position</dt>
-                                                <dd class="text-gray-900">{{ worker.worker_position }}</dd>
-                                            </div>
-                                            <div v-if="worker.worker_id_number">
-                                                <dt class="text-xs text-gray-500">ID Number</dt>
-                                                <dd class="text-gray-900 font-mono">{{ worker.worker_id_number }}</dd>
-                                            </div>
-                                            <div v-if="worker.worker_contact">
-                                                <dt class="text-xs text-gray-500">Contact</dt>
-                                                <dd class="text-gray-900">{{ worker.worker_contact }}</dd>
-                                            </div>
-                                            <div v-if="worker.worker_email">
-                                                <dt class="text-xs text-gray-500">Email</dt>
-                                                <dd class="text-gray-900 truncate">{{ worker.worker_email }}</dd>
-                                            </div>
-                                            <div v-if="worker.last_scan_at">
-                                                <dt class="text-xs text-gray-500">Last Scan</dt>
-                                                <dd class="text-gray-900">{{ formatDate(worker.last_scan_at) }}</dd>
-                                            </div>
-                                            <div v-if="worker.total_scans">
-                                                <dt class="text-xs text-gray-500">Total Scans</dt>
-                                                <dd class="text-gray-900">{{ worker.total_scans }}</dd>
-                                            </div>
-                                        </dl>
-                                        <!-- Worker QR Code Download -->
-                                        <div v-if="worker.qr_code_url" class="mt-3">
-                                            <a
-                                                :href="worker.qr_code_url"
-                                                download
-                                                class="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium"
-                                            >
-                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                Download Worker QR Code
-                                            </a>
+                                <!-- Expandable Scan History -->
+                                <div v-if="workerHasScans(worker)" class="border-t border-gray-200">
+                                    <button
+                                        @click="toggleWorkerHistory(worker.id)"
+                                        class="w-full px-4 py-2 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
+                                    >
+                                        <span class="flex items-center gap-2">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            View Scan History ({{ getWorkerScanCount(worker) }})
+                                        </span>
+                                        <svg
+                                            class="h-5 w-5 transition-transform"
+                                            :class="{ 'rotate-180': expandedWorkers.has(worker.id) }"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Scan History Timeline -->
+                                    <div
+                                        v-show="expandedWorkers.has(worker.id)"
+                                        class="px-4 py-3 bg-gray-50 border-t border-gray-200"
+                                    >
+                                        <div class="flow-root">
+                                            <ul class="-mb-6">
+                                                <li
+                                                    v-for="(scan, index) in getWorkerScans(worker)"
+                                                    :key="index"
+                                                    class="relative pb-6"
+                                                >
+                                                    <span
+                                                        v-if="index !== getWorkerScans(worker).length - 1"
+                                                        class="absolute top-4 left-3 -ml-px h-full w-0.5 bg-gray-300"
+                                                    ></span>
+                                                    <div class="relative flex space-x-3">
+                                                        <div>
+                                                            <span
+                                                                :class="scan.scan_type === 'entry' ? 'bg-green-500' : 'bg-blue-500'"
+                                                                class="h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white"
+                                                            >
+                                                                <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path
+                                                                        v-if="scan.scan_type === 'entry'"
+                                                                        fill-rule="evenodd"
+                                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                        clip-rule="evenodd"
+                                                                    />
+                                                                    <path
+                                                                        v-else
+                                                                        fill-rule="evenodd"
+                                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                                        clip-rule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="text-xs">
+                                                                <span class="font-medium text-gray-900">{{ scan.scan_type === 'entry' ? 'Entry' : 'Exit' }}</span>
+                                                                at
+                                                                <span class="font-medium text-gray-900">{{ scan.gate?.name || 'Unknown Gate' }}</span>
+                                                            </div>
+                                                            <p class="mt-0.5 text-xs text-gray-500">
+                                                                {{ formatDate(scan.scanned_at) }}
+                                                                <span v-if="scan.scanned_by">• By {{ scan.scanned_by.name }}</span>
+                                                            </p>
+                                                            <p v-if="scan.result_message" class="mt-1 text-xs text-gray-600">
+                                                                {{ scan.result_message }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -392,6 +489,35 @@
             </div>
         </div>
 
+        <!-- Worker QR Modal -->
+        <div v-if="selectedWorkerQR" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="selectedWorkerQR = null"></div>
+                <div class="relative bg-white rounded-lg px-4 pt-5 pb-4 overflow-hidden shadow-xl transform transition-all sm:max-w-md sm:w-full sm:p-6">
+                    <div class="text-center">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            {{ selectedWorkerQR.worker_name }} - QR Code
+                        </h3>
+                        <img :src="selectedWorkerQR.qr_code_url" alt="Worker QR Code" class="w-full max-w-sm mx-auto rounded-lg border-2 border-gray-200" />
+                        <p class="mt-3 text-sm text-gray-500">Position: {{ selectedWorkerQR.worker_position || 'N/A' }}</p>
+                        <p class="mt-1 text-xs text-gray-400">Scan this QR code for quick admission</p>
+                        <div class="mt-5">
+                            <a
+                                :href="selectedWorkerQR.qr_code_url"
+                                download
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition"
+                            >
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download QR Code
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Reject Modal -->
         <div v-if="showRejectModal" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4">
@@ -507,6 +633,10 @@ const user = computed(() => page.props.auth?.user);
 // Modals
 const showRejectModal = ref(false);
 const showRevokeModal = ref(false);
+const selectedWorkerQR = ref(null);
+
+// Worker history expansion
+const expandedWorkers = ref(new Set());
 
 // Forms
 const rejectForm = useForm({
@@ -535,6 +665,44 @@ const canReject = computed(() => {
 const canRevoke = computed(() => {
     return ['approved', 'active'].includes(props.pass.status);
 });
+
+const admittedWorkersCount = computed(() => {
+    if (!props.pass.workers) return 0;
+    return props.pass.workers.filter(w => w.is_admitted).length;
+});
+
+// Worker scan history helpers
+const workerHasScans = (worker) => {
+    if (!props.pass.scans) return false;
+    return props.pass.scans.some(scan =>
+        scan.scan_data?.worker_id === worker.id
+    );
+};
+
+const getWorkerScans = (worker) => {
+    if (!props.pass.scans) return [];
+    return props.pass.scans.filter(scan =>
+        scan.scan_data?.worker_id === worker.id
+    );
+};
+
+const getWorkerScanCount = (worker) => {
+    return getWorkerScans(worker).length;
+};
+
+const toggleWorkerHistory = (workerId) => {
+    if (expandedWorkers.value.has(workerId)) {
+        expandedWorkers.value.delete(workerId);
+    } else {
+        expandedWorkers.value.add(workerId);
+    }
+    // Force reactivity
+    expandedWorkers.value = new Set(expandedWorkers.value);
+};
+
+const showWorkerQR = (worker) => {
+    selectedWorkerQR.value = worker;
+};
 
 // Methods
 const getStatusBadgeClass = (status) => {

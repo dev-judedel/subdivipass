@@ -74,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/passes/{pass}/approve', [GuardScannerController::class, 'approvePass'])->name('guard.passes.approve');
         Route::post('/passes/{pass}/reject', [GuardScannerController::class, 'rejectPass'])->name('guard.passes.reject');
         Route::post('/workers/{worker}/admit', [GuardScannerController::class, 'admitWorker'])->name('guard.workers.admit');
+        Route::post('/workers/{worker}/exit', [GuardScannerController::class, 'exitWorker'])->name('guard.workers.exit');
         Route::post('/push-subscriptions', [GuardPushSubscriptionController::class, 'store'])->name('guard.push-subscriptions.store');
         Route::delete('/push-subscriptions', [GuardPushSubscriptionController::class, 'destroy'])->name('guard.push-subscriptions.destroy');
         Route::post('/pin/validate', [GuardScannerController::class, 'validatePin'])->name('guard.pin.validate');

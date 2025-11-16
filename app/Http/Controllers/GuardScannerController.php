@@ -106,6 +106,7 @@ class GuardScannerController extends Controller
         }
 
         $pass = $result['pass'] ?? null;
+        $scannedWorker = $result['scan_data']['payload']['scanned_worker'] ?? null;
 
         if ($pass) {
             PassScan::create([
@@ -118,7 +119,11 @@ class GuardScannerController extends Controller
                 'result_message' => $result['message'],
                 'scan_data' => array_merge(
                     $result['scan_data'] ?? [],
-                    ['attempt_id' => $result['attempt_id'] ?? null]
+                    [
+                        'attempt_id' => $result['attempt_id'] ?? null,
+                        'worker_id' => $scannedWorker?->id ?? null,
+                        'worker_name' => $scannedWorker?->worker_name ?? null,
+                    ]
                 ),
                 'device_id' => $data['device_id'] ?? null,
                 'ip_address' => $request->ip(),
@@ -130,6 +135,11 @@ class GuardScannerController extends Controller
 
             if ($result['status'] === 'success') {
                 $pass->recordScan($gate, $guard);
+
+                // If a worker QR was scanned, auto-admit that worker
+                if ($scannedWorker && $scannedWorker->isActive()) {
+                    $scannedWorker->admit($gate, $guard);
+                }
             }
         }
 
@@ -138,11 +148,18 @@ class GuardScannerController extends Controller
             $pass->load('workers');
         }
 
+        // Customize message if worker was auto-admitted
+        $message = $result['message'];
+        if ($scannedWorker && $result['status'] === 'success') {
+            $message = "Worker {$scannedWorker->worker_name} admitted successfully.";
+        }
+
         return redirect()
             ->route('guard.scanner')
             ->with('scanResult', [
                 'status' => $result['status'],
-                'message' => $result['message'],
+                'message' => $message,
+                'scanned_worker_id' => $scannedWorker?->id,  // Highlight this worker in UI
                 'pass' => $pass ? [
                     'id' => $pass->id,
                     'pass_number' => $pass->pass_number,
@@ -360,6 +377,84 @@ class GuardScannerController extends Controller
             ->with('scanResult', [
                 'status' => 'success',
                 'message' => "Worker {$worker->worker_name} admitted successfully.",
+                'pass' => [
+                    'id' => $pass->id,
+                    'pass_number' => $pass->pass_number,
+                    'visitor_name' => $pass->visitor_name,
+                    'status' => $pass->status,
+                    'valid_to' => $pass->valid_to,
+                    'uuid' => $pass->uuid,
+                    'pass_mode' => $pass->pass_mode,
+                    'group_size' => $pass->group_size,
+                    'workers' => $pass->workers->map(function ($w) {
+                        return [
+                            'id' => $w->id,
+                            'worker_name' => $w->worker_name,
+                            'worker_contact' => $w->worker_contact,
+                            'worker_email' => $w->worker_email,
+                            'worker_position' => $w->worker_position,
+                            'worker_id_number' => $w->worker_id_number,
+                            'photo_path' => $w->photo_path,
+                            'photo_url' => $w->photo_url,
+                            'qr_code_path' => $w->qr_code_path,
+                            'qr_code_url' => $w->qr_code_url,
+                            'is_admitted' => $w->is_admitted,
+                            'last_scan_at' => $w->last_scan_at,
+                            'total_scans' => $w->total_scans,
+                            'status' => $w->status,
+                        ];
+                    }),
+                ],
+                'gate' => [
+                    'id' => $gate->id,
+                    'name' => $gate->name,
+                ],
+            ]);
+    }
+
+    public function exitWorker(Request $request, WorkerPass $worker): RedirectResponse
+    {
+        $guard = $request->user();
+
+        $data = $request->validate([
+            'gate_id' => ['required', 'exists:gates,id'],
+        ]);
+
+        $gate = Gate::where('status', 'active')->findOrFail($data['gate_id']);
+        $this->ensureGateAssignment($gate->id, $guard->gate_ids);
+
+        // Mark worker as exited
+        $worker->exit();
+
+        // Create a pass scan record for this worker exit
+        PassScan::create([
+            'pass_id' => $worker->pass_id,
+            'gate_id' => $gate->id,
+            'guard_id' => $guard->id,
+            'scan_type' => 'exit',
+            'scan_method' => 'manual',
+            'result' => 'success',
+            'result_message' => "Worker {$worker->worker_name} exited",
+            'scan_data' => [
+                'worker_id' => $worker->id,
+                'worker_name' => $worker->worker_name,
+            ],
+            'device_id' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+            'location' => null,
+            'was_offline' => false,
+            'scanned_at' => now(),
+        ]);
+
+        // Load the parent pass with all workers to return updated state
+        $pass = Pass::with('workers')->find($worker->pass_id);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('scanResult', [
+                'status' => 'success',
+                'message' => "Worker {$worker->worker_name} exited successfully.",
                 'pass' => [
                     'id' => $pass->id,
                     'pass_number' => $pass->pass_number,

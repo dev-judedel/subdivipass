@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Gate;
 use App\Models\Pass;
 use App\Models\ValidationAttempt;
+use App\Models\WorkerPass;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -96,7 +97,17 @@ class ValidationService
         }
 
         $pass = null;
-        if (isset($decoded['pass_id'])) {
+        $worker = null;
+
+        // Check if this is a worker QR code
+        if (isset($decoded['type']) && $decoded['type'] === 'worker' && isset($decoded['worker_id'])) {
+            $worker = WorkerPass::with('pass')->find($decoded['worker_id']);
+            if ($worker) {
+                $pass = $worker->pass;
+                $decoded['scanned_worker'] = $worker;  // Add worker to metadata
+            }
+        } elseif (isset($decoded['pass_id'])) {
+            // Regular pass QR code
             $pass = Pass::where('uuid', $decoded['pass_id'])->first();
         }
 

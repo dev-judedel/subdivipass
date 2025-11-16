@@ -160,8 +160,106 @@
                         </dl>
                     </div>
 
-                    <!-- Visitor Information -->
-                    <div class="bg-white rounded-lg shadow-sm p-6">
+                    <!-- Worker List (Worker Pass) -->
+                    <div v-if="pass.pass_mode === 'group' && pass.workers && pass.workers.length > 0" class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-semibold text-gray-900">Workers</h2>
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                {{ pass.workers.length }} Worker{{ pass.workers.length !== 1 ? 's' : '' }}
+                            </span>
+                        </div>
+                        <div class="space-y-4">
+                            <div
+                                v-for="worker in pass.workers"
+                                :key="worker.id"
+                                class="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition"
+                            >
+                                <div class="flex items-start gap-4">
+                                    <!-- Worker Photo -->
+                                    <div class="flex-shrink-0">
+                                        <div
+                                            v-if="worker.photo_url"
+                                            class="w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200"
+                                        >
+                                            <img :src="worker.photo_url" :alt="worker.worker_name" class="w-full h-full object-cover" />
+                                        </div>
+                                        <div
+                                            v-else
+                                            class="w-20 h-20 rounded-lg bg-gray-100 border-2 border-gray-200 flex items-center justify-center"
+                                        >
+                                            <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <!-- Worker Details -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <h3 class="text-base font-semibold text-gray-900">{{ worker.worker_name }}</h3>
+                                            <span
+                                                v-if="worker.is_admitted"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800"
+                                            >
+                                                Admitted
+                                            </span>
+                                            <span
+                                                :class="worker.status === 'active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
+                                            >
+                                                {{ worker.status }}
+                                            </span>
+                                        </div>
+                                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                            <div v-if="worker.worker_position">
+                                                <dt class="text-xs text-gray-500">Position</dt>
+                                                <dd class="text-gray-900">{{ worker.worker_position }}</dd>
+                                            </div>
+                                            <div v-if="worker.worker_id_number">
+                                                <dt class="text-xs text-gray-500">ID Number</dt>
+                                                <dd class="text-gray-900 font-mono">{{ worker.worker_id_number }}</dd>
+                                            </div>
+                                            <div v-if="worker.worker_contact">
+                                                <dt class="text-xs text-gray-500">Contact</dt>
+                                                <dd class="text-gray-900">{{ worker.worker_contact }}</dd>
+                                            </div>
+                                            <div v-if="worker.worker_email">
+                                                <dt class="text-xs text-gray-500">Email</dt>
+                                                <dd class="text-gray-900 truncate">{{ worker.worker_email }}</dd>
+                                            </div>
+                                            <div v-if="worker.last_scan_at">
+                                                <dt class="text-xs text-gray-500">Last Scan</dt>
+                                                <dd class="text-gray-900">{{ formatDate(worker.last_scan_at) }}</dd>
+                                            </div>
+                                            <div v-if="worker.total_scans">
+                                                <dt class="text-xs text-gray-500">Total Scans</dt>
+                                                <dd class="text-gray-900">{{ worker.total_scans }}</dd>
+                                            </div>
+                                        </dl>
+                                        <!-- Worker QR Code Download -->
+                                        <div v-if="worker.qr_code_url" class="mt-3">
+                                            <a
+                                                :href="worker.qr_code_url"
+                                                download
+                                                class="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Download Worker QR Code
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visitor Information (Single Pass) -->
+                    <div v-if="pass.pass_mode === 'single'" class="bg-white rounded-lg shadow-sm p-6">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Visitor Information</h2>
                         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -183,8 +281,8 @@
                         </dl>
                     </div>
 
-                    <!-- Vehicle Information -->
-                    <div v-if="pass.vehicle_plate || pass.vehicle_model" class="bg-white rounded-lg shadow-sm p-6">
+                    <!-- Vehicle Information (Single Pass Only) -->
+                    <div v-if="pass.pass_mode === 'single' && (pass.vehicle_plate || pass.vehicle_model)" class="bg-white rounded-lg shadow-sm p-6">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Vehicle Information</h2>
                         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div v-if="pass.vehicle_plate">

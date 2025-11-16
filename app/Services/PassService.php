@@ -6,9 +6,11 @@ use App\Models\Pass;
 use App\Models\PassLog;
 use App\Models\PassType;
 use App\Models\User;
+use App\Models\WorkerPass;
 use App\Notifications\PassStatusChanged;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PassService
 {
@@ -45,17 +47,15 @@ class PassService
             // Determine initial status
             $status = $passType->requiresApproval() ? 'pending' : 'approved';
 
-            // Create pass
-            $pass = Pass::create([
+            // Determine pass mode
+            $passMode = $data['pass_mode'] ?? 'single';
+
+            // Create pass - common fields
+            $passData = [
                 'subdivision_id' => $data['subdivision_id'],
                 'pass_type_id' => $data['pass_type_id'],
                 'requester_id' => $requester->id,
-                'visitor_name' => $data['visitor_name'],
-                'visitor_contact' => $data['visitor_contact'] ?? null,
-                'visitor_email' => $data['visitor_email'] ?? null,
-                'visitor_company' => $data['visitor_company'] ?? null,
-                'vehicle_plate' => $data['vehicle_plate'] ?? null,
-                'vehicle_model' => $data['vehicle_model'] ?? null,
+                'pass_mode' => $passMode,
                 'purpose' => $data['purpose'],
                 'destination' => $data['destination'] ?? null,
                 'notes' => $data['notes'] ?? null,
@@ -63,15 +63,36 @@ class PassService
                 'valid_from' => $validFrom,
                 'valid_to' => $validTo,
                 'status' => $status,
-            ]);
+            ];
 
-            // Generate QR code
+            // Add single pass specific fields
+            if ($passMode === 'single') {
+                $passData = array_merge($passData, [
+                    'visitor_name' => $data['visitor_name'],
+                    'visitor_contact' => $data['visitor_contact'] ?? null,
+                    'visitor_email' => $data['visitor_email'] ?? null,
+                    'visitor_company' => $data['visitor_company'] ?? null,
+                    'vehicle_plate' => $data['vehicle_plate'] ?? null,
+                    'vehicle_model' => $data['vehicle_model'] ?? null,
+                ]);
+            } else {
+                // For worker pass, use generic visitor name
+                $passData['visitor_name'] = 'Worker Pass - ' . count($data['workers']) . ' workers';
+                $passData['group_size'] = count($data['workers']);
+            }
+
+            $pass = Pass::create($passData);
+
+            // Handle worker pass creation
+            if ($passMode === 'group' && isset($data['workers'])) {
+                foreach ($data['workers'] as $workerData) {
+                    $this->createWorkerPass($pass, $workerData);
+                }
+            }
+
+            // Generate main pass QR code (for single pass or group pass master)
             $qrPath = $this->qrService->generateQRCode($pass);
-
-            // Update pass with QR code path
-            $pass->update([
-                'qr_code_path' => $qrPath,
-            ]);
+            $pass->update(['qr_code_path' => $qrPath]);
 
             // If auto-approved and within validity, activate it
             if ($status === 'approved' && $pass->isValid()) {
@@ -82,10 +103,47 @@ class PassService
             activity()
                 ->performedOn($pass)
                 ->causedBy($requester)
-                ->log('Pass created');
+                ->log($passMode === 'group' ? 'Worker pass created' : 'Pass created');
 
-            return $pass->fresh(['type', 'subdivision', 'requester']);
+            return $pass->fresh(['type', 'subdivision', 'requester', 'workers']);
         });
+    }
+
+    /**
+     * Create a worker pass with photo and QR code.
+     */
+    protected function createWorkerPass(Pass $pass, array $workerData): WorkerPass
+    {
+        // Handle photo upload
+        $photoPath = null;
+        if (isset($workerData['photo']) && $workerData['photo'] instanceof \Illuminate\Http\UploadedFile) {
+            $photoPath = $workerData['photo']->store('worker-photos', 'public');
+        }
+
+        // Create worker pass
+        $worker = WorkerPass::create([
+            'pass_id' => $pass->id,
+            'worker_name' => $workerData['worker_name'],
+            'worker_contact' => $workerData['worker_contact'] ?? null,
+            'worker_email' => $workerData['worker_email'] ?? null,
+            'worker_position' => $workerData['worker_position'] ?? null,
+            'worker_id_number' => $workerData['worker_id_number'] ?? null,
+            'photo_path' => $photoPath,
+            'status' => 'active',
+        ]);
+
+        // Generate individual QR code for this worker
+        $qrCodePath = $this->qrService->generateWorkerQRCode($worker);
+
+        // Generate QR signature
+        $signature = $this->qrService->generateWorkerSignature($worker);
+
+        $worker->update([
+            'qr_code_path' => $qrCodePath,
+            'qr_signature' => $signature,
+        ]);
+
+        return $worker;
     }
 
     /**

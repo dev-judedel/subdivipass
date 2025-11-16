@@ -25,7 +25,7 @@ class PassController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pass::with(['type', 'subdivision', 'requester', 'approver'])
+        $query = Pass::with(['type', 'subdivision', 'requester', 'approver', 'workers'])
             ->latest();
 
         // Filter by subdivision if user is not super-admin
@@ -48,14 +48,38 @@ class PassController extends Controller
             $query->where('pass_type_id', $request->pass_type_id);
         }
 
+        // General search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('pass_number', 'like', "%{$search}%")
                     ->orWhere('visitor_name', 'like', "%{$search}%")
                     ->orWhere('visitor_contact', 'like', "%{$search}%")
+                    ->orWhere('vehicle_plate', 'like', "%{$search}%")
                     ->orWhere('pin', 'like', "%{$search}%");
             });
+        }
+
+        // Advanced search filters
+        if ($request->filled('visitor_name')) {
+            $query->where('visitor_name', 'like', "%{$request->visitor_name}%");
+        }
+
+        if ($request->filled('visitor_contact')) {
+            $query->where('visitor_contact', 'like', "%{$request->visitor_contact}%");
+        }
+
+        if ($request->filled('vehicle_plate')) {
+            $query->where('vehicle_plate', 'like', "%{$request->vehicle_plate}%");
+        }
+
+        // Date range filters
+        if ($request->filled('date_from')) {
+            $query->whereDate('valid_from', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('valid_to', '<=', $request->date_to);
         }
 
         $passes = $query->paginate(15)->withQueryString();
@@ -68,7 +92,17 @@ class PassController extends Controller
             'passes' => $passes,
             'subdivisions' => $subdivisions,
             'passTypes' => $passTypes,
-            'filters' => $request->only(['status', 'subdivision_id', 'pass_type_id', 'search']),
+            'filters' => $request->only([
+                'status',
+                'subdivision_id',
+                'pass_type_id',
+                'search',
+                'visitor_name',
+                'visitor_contact',
+                'vehicle_plate',
+                'date_from',
+                'date_to'
+            ]),
         ]);
     }
 
@@ -121,7 +155,7 @@ class PassController extends Controller
     {
         $this->authorize('view', $pass);
 
-        $pass->load(['type', 'subdivision', 'requester', 'approver', 'scans.gate', 'scans.scannedBy']);
+        $pass->load(['type', 'subdivision', 'requester', 'approver', 'scans.gate', 'scans.scannedBy', 'workers']);
 
         return Inertia::render('Passes/Show', [
             'pass' => $pass,

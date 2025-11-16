@@ -24,14 +24,15 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Filters Section -->
             <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <!-- Basic Filters -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <!-- Search -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quick Search</label>
                         <input
                             v-model="filterForm.search"
                             type="text"
-                            placeholder="Pass #, Name, Contact, PIN..."
+                            placeholder="Pass #, Name, Contact, Vehicle, PIN..."
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             @input="debouncedFilter"
                         />
@@ -95,6 +96,82 @@
                     </div>
                 </div>
 
+                <!-- Advanced Search Toggle -->
+                <div class="mt-4">
+                    <button
+                        @click="showAdvancedSearch = !showAdvancedSearch"
+                        class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        <svg class="w-4 h-4 mr-1" :class="{ 'rotate-180': showAdvancedSearch }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        {{ showAdvancedSearch ? 'Hide' : 'Show' }} Advanced Search
+                    </button>
+                </div>
+
+                <!-- Advanced Search Fields -->
+                <div v-if="showAdvancedSearch" class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Visitor Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Visitor Name</label>
+                            <input
+                                v-model="filterForm.visitor_name"
+                                type="text"
+                                placeholder="Search by visitor name..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @input="debouncedFilter"
+                            />
+                        </div>
+
+                        <!-- Visitor Contact -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Contact / Phone</label>
+                            <input
+                                v-model="filterForm.visitor_contact"
+                                type="text"
+                                placeholder="Search by phone or email..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @input="debouncedFilter"
+                            />
+                        </div>
+
+                        <!-- Vehicle Plate -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Plate</label>
+                            <input
+                                v-model="filterForm.vehicle_plate"
+                                type="text"
+                                placeholder="Search by plate number..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @input="debouncedFilter"
+                            />
+                        </div>
+
+                        <!-- Date From -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Valid From</label>
+                            <input
+                                v-model="filterForm.date_from"
+                                type="date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @change="applyFilters"
+                            />
+                        </div>
+
+                        <!-- Date To -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Valid To</label>
+                            <input
+                                v-model="filterForm.date_to"
+                                type="date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @change="applyFilters"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Active Filters Display -->
                 <div v-if="hasActiveFilters" class="mt-4 flex items-center gap-2">
                     <span class="text-sm text-gray-600">Active filters:</span>
@@ -153,8 +230,23 @@
                                     <div class="text-xs text-gray-500">PIN: {{ pass.pin }}</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ pass.visitor_name }}</div>
-                                    <div class="text-xs text-gray-500">{{ pass.visitor_contact || 'No contact' }}</div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium text-gray-900">{{ pass.visitor_name }}</div>
+                                            <div class="text-xs text-gray-500">{{ pass.visitor_contact || 'No contact' }}</div>
+                                        </div>
+                                        <!-- Worker Pass Badge -->
+                                        <span
+                                            v-if="pass.pass_mode === 'group'"
+                                            class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"
+                                            :title="`Worker Pass - ${pass.group_size || 0} workers`"
+                                        >
+                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            {{ pass.group_size || 0 }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="text-sm text-gray-900">{{ pass.type?.name }}</span>
@@ -442,12 +534,20 @@ const props = defineProps({
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 
+// UI State
+const showAdvancedSearch = ref(false);
+
 // Filter form
 const filterForm = ref({
     search: props.filters.search || '',
     status: props.filters.status || '',
     subdivision_id: props.filters.subdivision_id || '',
     pass_type_id: props.filters.pass_type_id || '',
+    visitor_name: props.filters.visitor_name || '',
+    visitor_contact: props.filters.visitor_contact || '',
+    vehicle_plate: props.filters.vehicle_plate || '',
+    date_from: props.filters.date_from || '',
+    date_to: props.filters.date_to || '',
 });
 
 // Reject modal
@@ -468,7 +568,12 @@ const hasActiveFilters = computed(() => {
     return filterForm.value.search ||
            filterForm.value.status ||
            filterForm.value.subdivision_id ||
-           filterForm.value.pass_type_id;
+           filterForm.value.pass_type_id ||
+           filterForm.value.visitor_name ||
+           filterForm.value.visitor_contact ||
+           filterForm.value.vehicle_plate ||
+           filterForm.value.date_from ||
+           filterForm.value.date_to;
 });
 
 // Methods

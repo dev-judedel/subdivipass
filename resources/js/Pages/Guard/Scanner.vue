@@ -289,6 +289,96 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Worker Selection UI (Worker Pass) -->
+                <div v-if="scanResult && scanResult.pass && scanResult.pass.pass_mode === 'group' && scanResult.pass.workers && scanResult.pass.workers.length > 0" class="rounded-2xl border border-purple-500/40 bg-purple-500/10 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-sm uppercase tracking-wide font-semibold text-purple-200">Worker Pass</p>
+                            <p class="text-lg font-bold text-white">Select Worker to Admit</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/30 text-purple-100">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            {{ scanResult.pass.workers.length }} Workers
+                        </span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div
+                            v-for="worker in scanResult.pass.workers"
+                            :key="worker.id"
+                            class="flex items-center gap-3 p-3 rounded-xl border transition"
+                            :class="worker.is_admitted ? 'border-green-500/40 bg-green-500/10' : 'border-slate-700 bg-slate-900/50 hover:border-purple-500/40'"
+                        >
+                            <!-- Worker Photo -->
+                            <div class="flex-shrink-0">
+                                <div
+                                    v-if="worker.photo_url"
+                                    class="w-16 h-16 rounded-lg overflow-hidden border-2"
+                                    :class="worker.is_admitted ? 'border-green-500' : 'border-slate-600'"
+                                >
+                                    <img :src="worker.photo_url" :alt="worker.worker_name" class="w-full h-full object-cover" />
+                                </div>
+                                <div
+                                    v-else
+                                    class="w-16 h-16 rounded-lg flex items-center justify-center border-2"
+                                    :class="worker.is_admitted ? 'border-green-500 bg-green-500/20' : 'border-slate-600 bg-slate-800'"
+                                >
+                                    <svg class="h-8 w-8" :class="worker.is_admitted ? 'text-green-300' : 'text-slate-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Worker Info -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <p class="font-semibold text-white truncate">{{ worker.worker_name }}</p>
+                                    <span
+                                        v-if="worker.is_admitted"
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-500/30 text-green-200"
+                                    >
+                                        ✓ Admitted
+                                    </span>
+                                </div>
+                                <div class="text-xs text-slate-400 space-y-0.5">
+                                    <p v-if="worker.worker_position">{{ worker.worker_position }}</p>
+                                    <p v-if="worker.worker_id_number" class="font-mono">ID: {{ worker.worker_id_number }}</p>
+                                    <p v-if="worker.last_scan_at && worker.is_admitted" class="text-green-300">
+                                        Last scan: {{ formatDate(worker.last_scan_at) }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Admit Button -->
+                            <div class="flex-shrink-0">
+                                <button
+                                    v-if="!worker.is_admitted && scanResult.status === 'success'"
+                                    type="button"
+                                    class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition disabled:opacity-50"
+                                    @click="admitWorker(worker.id)"
+                                    :disabled="admittingWorker === worker.id"
+                                >
+                                    {{ admittingWorker === worker.id ? 'Admitting...' : 'Admit' }}
+                                </button>
+                                <span v-else-if="worker.is_admitted" class="text-green-300 text-sm font-semibold">
+                                    Inside
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 rounded-lg bg-slate-900/70 text-xs text-slate-300">
+                        <p class="font-semibold mb-1">Instructions:</p>
+                        <ul class="list-disc list-inside space-y-1 text-slate-400">
+                            <li>Verify worker's identity with their photo and ID</li>
+                            <li>Click "Admit" to grant entry to the worker</li>
+                            <li>Workers already admitted will show "Inside" status</li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-semibold text-white">Local Scan History</h2>
@@ -540,7 +630,7 @@
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import axios from 'axios';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import GuardLayout from '@/Layouts/GuardLayout.vue';
 import { cachePass, getCachedPass, trimCachedPasses, isIndexedDbSupported } from '@/utils/indexedDb';
 import { usePwaInstallPrompt } from '@/composables/usePwaInstallPrompt';
@@ -981,6 +1071,44 @@ const rejectPass = () => {
         onSuccess: () => rejectForm.reset('reason'),
     });
 };
+
+// Worker Pass - Admit individual worker
+const admittingWorker = ref(null);
+const admitWorker = (workerId) => {
+    if (!scanResult.value?.pass || !scanForm.gate_id || admittingWorker.value) {
+        return;
+    }
+
+    admittingWorker.value = workerId;
+
+    // Use Inertia router to make the request
+    router.post(
+        route('guard.workers.admit', { worker: workerId }),
+        {
+            gate_id: scanForm.gate_id,
+            scan_type: scanForm.scan_type || 'entry',
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                console.log('✅ Worker admitted successfully');
+                admittingWorker.value = null;
+
+                // Refresh scan result to update worker admission status
+                // The backend will return updated pass data with worker statuses
+            },
+            onError: (errors) => {
+                console.error('❌ Failed to admit worker:', errors);
+                admittingWorker.value = null;
+                alert(errors.message || 'Failed to admit worker. Please try again.');
+            },
+            onFinish: () => {
+                admittingWorker.value = null;
+            },
+        }
+    );
+};
+
 const videoRef = ref(null);
 const codeReader = new BrowserMultiFormatReader();
 const cameraDevices = ref([]);

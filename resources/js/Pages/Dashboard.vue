@@ -23,20 +23,10 @@
                         Total {{ totalPassesByDay }}
                     </span>
                 </div>
-                <div class="flex h-48 items-end gap-3">
-                    <div
-                        v-for="day in passesByDay"
-                        :key="day.day"
-                        class="flex flex-1 flex-col items-center gap-2"
-                    >
-                        <div
-                            class="w-8 rounded-t-full bg-gradient-to-b from-blue-500 to-blue-300"
-                            :style="{ height: `${computeBarHeight(day.total)}%` }"
-                        ></div>
-                        <span class="text-xs text-slate-500">{{ day.day }}</span>
-                    </div>
-                    <p v-if="!passesByDay.length" class="text-sm text-slate-500">No data available.</p>
+                <div v-if="passesByDay.length" class="h-48">
+                    <LineChart :data="passVolumeChartData" :options="passVolumeChartOptions" :height="192" />
                 </div>
+                <p v-else class="text-sm text-slate-500 text-center py-12">No data available.</p>
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -157,40 +147,10 @@
                         {{ todayScans.reduce((sum, h) => sum + h.total, 0) }} total
                     </span>
                 </div>
-                <p v-if="!todayScans.length" class="text-sm text-slate-500">No scans recorded today.</p>
-                <div v-else class="space-y-2">
-                    <div
-                        v-for="scan in todayScans.slice(-6)"
-                        :key="scan.hour"
-                        class="flex items-center gap-3"
-                    >
-                        <span class="text-xs font-semibold text-slate-600 w-12">{{ scan.hour }}</span>
-                        <div class="flex-1 flex items-center gap-1">
-                            <div
-                                v-if="scan.successful"
-                                class="h-6 rounded bg-emerald-500 flex items-center justify-center text-[10px] font-semibold text-white"
-                                :style="{ width: `${(scan.successful / Math.max(...todayScans.map(s => s.total))) * 100}%`, minWidth: scan.successful > 0 ? '24px' : '0' }"
-                            >
-                                {{ scan.successful }}
-                            </div>
-                            <div
-                                v-if="scan.warning"
-                                class="h-6 rounded bg-amber-500 flex items-center justify-center text-[10px] font-semibold text-white"
-                                :style="{ width: `${(scan.warning / Math.max(...todayScans.map(s => s.total))) * 100}%`, minWidth: scan.warning > 0 ? '24px' : '0' }"
-                            >
-                                {{ scan.warning }}
-                            </div>
-                            <div
-                                v-if="scan.failed"
-                                class="h-6 rounded bg-rose-500 flex items-center justify-center text-[10px] font-semibold text-white"
-                                :style="{ width: `${(scan.failed / Math.max(...todayScans.map(s => s.total))) * 100}%`, minWidth: scan.failed > 0 ? '24px' : '0' }"
-                            >
-                                {{ scan.failed }}
-                            </div>
-                        </div>
-                        <span class="text-xs font-semibold text-slate-400 w-8 text-right">{{ scan.total }}</span>
-                    </div>
+                <div v-if="todayScans.length" class="h-64">
+                    <BarChart :data="scanActivityChartData" :options="scanActivityChartOptions" :height="256" />
                 </div>
+                <p v-else class="text-sm text-slate-500 text-center py-12">No scans recorded today.</p>
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -268,19 +228,10 @@
                         Manage
                     </Link>
                 </div>
-                <p v-if="!passByType.length" class="text-sm text-slate-500">No active passes.</p>
-                <ul v-else class="space-y-3">
-                    <li
-                        v-for="type in passByType"
-                        :key="type.type"
-                        class="flex items-center justify-between rounded-xl border border-slate-100 p-3"
-                    >
-                        <p class="text-sm font-semibold text-slate-900">{{ type.type }}</p>
-                        <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-                            {{ type.count }}
-                        </span>
-                    </li>
-                </ul>
+                <div v-if="passByType.length" class="h-64">
+                    <DoughnutChart :data="passTypeChartData" :options="passTypeChartOptions" :height="256" />
+                </div>
+                <p v-else class="text-sm text-slate-500 text-center py-12">No active passes.</p>
             </div>
         </section>
 
@@ -325,6 +276,9 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import LineChart from '@/Components/Charts/LineChart.vue';
+import BarChart from '@/Components/Charts/BarChart.vue';
+import DoughnutChart from '@/Components/Charts/DoughnutChart.vue';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -417,4 +371,152 @@ const severityClass = (severity) => {
 const formatIssue = (value) => value?.replace(/_/g, ' ') ?? 'issue';
 const formatAction = (value) => value?.replace(/_/g, ' ') ?? 'update';
 const formatTimestamp = (value) => (value ? new Date(value).toLocaleString() : 'just now');
+
+// Chart.js Data
+const passVolumeChartData = computed(() => ({
+    labels: props.passesByDay.map(day => day.day),
+    datasets: [
+        {
+            label: 'Passes Created',
+            data: props.passesByDay.map(day => day.total),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true,
+        }
+    ]
+}));
+
+const passVolumeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: false,
+        },
+        tooltip: {
+            mode: 'index',
+            intersect: false,
+        },
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: {
+                precision: 0,
+            },
+        },
+    },
+};
+
+const passTypeChartData = computed(() => {
+    const colors = [
+        'rgb(59, 130, 246)',   // blue
+        'rgb(16, 185, 129)',   // green
+        'rgb(245, 158, 11)',   // amber
+        'rgb(239, 68, 68)',    // red
+        'rgb(139, 92, 246)',   // purple
+        'rgb(236, 72, 153)',   // pink
+    ];
+
+    return {
+        labels: props.passByType.map(item => item.type),
+        datasets: [
+            {
+                label: 'Pass Count',
+                data: props.passByType.map(item => item.count),
+                backgroundColor: colors.slice(0, props.passByType.length),
+                borderWidth: 2,
+                borderColor: '#ffffff',
+            }
+        ]
+    };
+});
+
+const passTypeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: true,
+            position: 'bottom',
+        },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    let label = context.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    label += context.parsed;
+
+                    // Calculate percentage
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                    label += ` (${percentage}%)`;
+
+                    return label;
+                }
+            }
+        },
+    },
+};
+
+const scanActivityChartData = computed(() => {
+    const hours = props.todayScans.map(scan => scan.hour);
+
+    return {
+        labels: hours,
+        datasets: [
+            {
+                label: 'Successful',
+                data: props.todayScans.map(scan => scan.successful),
+                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                borderColor: 'rgb(16, 185, 129)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Warning',
+                data: props.todayScans.map(scan => scan.warning),
+                backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                borderColor: 'rgb(245, 158, 11)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Failed',
+                data: props.todayScans.map(scan => scan.failed),
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: 'rgb(239, 68, 68)',
+                borderWidth: 1,
+            }
+        ]
+    };
+});
+
+const scanActivityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: true,
+            position: 'bottom',
+        },
+        tooltip: {
+            mode: 'index',
+            intersect: false,
+        },
+    },
+    scales: {
+        x: {
+            stacked: true,
+        },
+        y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+                precision: 0,
+            },
+        },
+    },
+};
 </script>

@@ -41,6 +41,9 @@ class Pass extends Model
         'valid_from',
         'valid_to',
         'status',
+        'pass_mode',         // 'single' or 'group'
+        'group_size',        // Number of people in group
+        'group_members',     // JSON array of group member details
         'approved_at',
         'rejected_at',
         'revoked_at',
@@ -58,6 +61,7 @@ class Pass extends Model
      */
     protected $casts = [
         'metadata' => 'array',
+        'group_members' => 'array',
         'valid_from' => 'datetime',
         'valid_to' => 'datetime',
         'approved_at' => 'datetime',
@@ -65,6 +69,7 @@ class Pass extends Model
         'revoked_at' => 'datetime',
         'last_scanned_at' => 'datetime',
         'scan_count' => 'integer',
+        'group_size' => 'integer',
     ];
 
     /**
@@ -161,6 +166,32 @@ class Pass extends Model
     public function logs()
     {
         return $this->hasMany(PassLog::class);
+    }
+
+    /**
+     * Get the worker passes (for group/worker passes).
+     */
+    public function workers()
+    {
+        return $this->hasMany(WorkerPass::class);
+    }
+
+    /**
+     * Get active workers only.
+     */
+    public function activeWorkers()
+    {
+        return $this->hasMany(WorkerPass::class)->where('status', 'active');
+    }
+
+    /**
+     * Get admitted workers (currently inside).
+     */
+    public function admittedWorkers()
+    {
+        return $this->hasMany(WorkerPass::class)
+            ->where('is_admitted', true)
+            ->where('status', 'active');
     }
 
     /**
@@ -315,5 +346,71 @@ class Pass extends Model
             'last_scanned_at' => now(),
             'last_scanned_gate_id' => $gate->id,
         ]);
+    }
+
+    /**
+     * Check if this is a group pass.
+     */
+    public function isGroupPass(): bool
+    {
+        return $this->pass_mode === 'group';
+    }
+
+    /**
+     * Check if this is a single pass.
+     */
+    public function isSinglePass(): bool
+    {
+        return $this->pass_mode === 'single';
+    }
+
+    /**
+     * Get the number of people covered by this pass.
+     */
+    public function getTotalPeopleCount(): int
+    {
+        return $this->isGroupPass() ? ($this->group_size ?? 1) : 1;
+    }
+
+    /**
+     * Get group member names as comma-separated string.
+     */
+    public function getGroupMemberNames(): ?string
+    {
+        if (!$this->isGroupPass() || !$this->group_members) {
+            return null;
+        }
+
+        return collect($this->group_members)
+            ->pluck('name')
+            ->filter()
+            ->implode(', ');
+    }
+
+    /**
+     * Add a member to the group.
+     */
+    public function addGroupMember(array $member): void
+    {
+        $members = $this->group_members ?? [];
+        $members[] = $member;
+        $this->group_members = $members;
+        $this->group_size = count($members);
+        $this->save();
+    }
+
+    /**
+     * Remove a member from the group by index.
+     */
+    public function removeGroupMember(int $index): void
+    {
+        $members = $this->group_members ?? [];
+
+        if (isset($members[$index])) {
+            unset($members[$index]);
+            $this->group_members = array_values($members);
+            $this->group_size = count($this->group_members);
+            $this->save();
+        }
     }
 }

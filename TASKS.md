@@ -301,19 +301,25 @@
 ### Dashboard Components
 - `[COMPLETED]` Build executive summary cards (passes today, approvals, guard alerts) - Date: 2025-11-11
 - `[COMPLETED]` Add pass/guard activity feed with filters - Date: 2025-11-11
-- `[TODO]` Implement Chart.js visualizations:
-  - `[TODO]` Daily pass creation chart
-  - `[TODO]` Pass type mix
-  - `[TODO]` Gate validation heatmap
-  - `[TODO]` Validation success vs failure
+- `[COMPLETED]` Implement Chart.js visualizations: - Date: 2025-11-16
+  - `[COMPLETED]` Daily pass creation chart (LineChart component)
+  - `[COMPLETED]` Pass type mix (DoughnutChart component)
+  - `[COMPLETED]` Validation success vs failure (Stacked BarChart component)
+  - `[TODO]` Gate validation heatmap (geographic visualization - future)
 - `[COMPLETED]` Create quick actions (new pass, approve queue, broadcast alert) - Date: 2025-11-11
 - `[TODO]` Add date range filters
 - `[TODO]` Wire real-time refresh (Pusher/WebSockets)
 - `[TODO]` Add export/download (CSV/PDF)
 
 ### Pass Management Interface
+- `[COMPLETED]` Add advanced search (visitor, vehicle, phone) - Date: 2025-11-16
+  - `[COMPLETED]` Collapsible advanced search UI
+  - `[COMPLETED]` Visitor name dedicated field
+  - `[COMPLETED]` Contact/phone dedicated field
+  - `[COMPLETED]` Vehicle plate search
+  - `[COMPLETED]` Date range filters (valid_from, valid_to)
+  - `[COMPLETED]` Backend PassController filter support
 - `[TODO]` Enhance pass list (inline status chips, quick filters)
-- `[TODO]` Add advanced search (visitor, vehicle, phone)
 - `[TODO]` Build approval queue view with batch actions
 - `[TODO]` Implement bulk operations (approve, revoke, extend)
 - `[TODO]` Add pass duplication + template shortcuts
@@ -706,9 +712,9 @@ _Move completed tasks here with completion date_
 
 ---
 
-**Last Updated:** November 10, 2024
+**Last Updated:** November 16, 2024
 **Total Tasks:** 404+
-**Completed:** 108 (including 4 newly discovered schema fixes)
+**Completed:** 118 (including Chart.js, advanced search, and date filters)
 **In Progress:** 0
 **Blocked:** 0
 

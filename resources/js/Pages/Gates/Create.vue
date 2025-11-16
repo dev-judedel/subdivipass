@@ -248,7 +248,7 @@
                 </button>
             </div>
         </form>
-    </div>
+
         <ConfirmModal
             v-model="showConfirm"
             title="Register this gate?"

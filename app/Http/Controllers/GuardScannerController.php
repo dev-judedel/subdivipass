@@ -8,7 +8,9 @@ use App\Http\Requests\GuardShiftRequest;
 use App\Models\Gate;
 use App\Models\GuardIssueReport;
 use App\Models\GuardShift;
+use App\Models\Pass;
 use App\Models\PassScan;
+use App\Models\WorkerPass;
 use App\Services\PassService;
 use App\Services\ValidationService;
 use Illuminate\Http\RedirectResponse;
@@ -131,6 +133,11 @@ class GuardScannerController extends Controller
             }
         }
 
+        // Load workers relationship if this is a group/worker pass
+        if ($pass && $pass->pass_mode === 'group') {
+            $pass->load('workers');
+        }
+
         return redirect()
             ->route('guard.scanner')
             ->with('scanResult', [
@@ -143,6 +150,26 @@ class GuardScannerController extends Controller
                     'status' => $pass->status,
                     'valid_to' => $pass->valid_to,
                     'uuid' => $pass->uuid,
+                    'pass_mode' => $pass->pass_mode,
+                    'group_size' => $pass->group_size,
+                    'workers' => $pass->pass_mode === 'group' ? $pass->workers->map(function ($worker) {
+                        return [
+                            'id' => $worker->id,
+                            'worker_name' => $worker->worker_name,
+                            'worker_contact' => $worker->worker_contact,
+                            'worker_email' => $worker->worker_email,
+                            'worker_position' => $worker->worker_position,
+                            'worker_id_number' => $worker->worker_id_number,
+                            'photo_path' => $worker->photo_path,
+                            'photo_url' => $worker->photo_url,
+                            'qr_code_path' => $worker->qr_code_path,
+                            'qr_code_url' => $worker->qr_code_url,
+                            'is_admitted' => $worker->is_admitted,
+                            'last_scan_at' => $worker->last_scan_at,
+                            'total_scans' => $worker->total_scans,
+                            'status' => $worker->status,
+                        ];
+                    }) : [],
                 ] : null,
                 'gate' => [
                     'id' => $gate->id,
@@ -276,6 +303,95 @@ class GuardScannerController extends Controller
             ->with('passActionStatus', [
                 'status' => 'warning',
                 'message' => 'Pass rejected.',
+            ]);
+    }
+
+    public function admitWorker(Request $request, WorkerPass $worker): RedirectResponse
+    {
+        $guard = $request->user();
+
+        $data = $request->validate([
+            'gate_id' => ['required', 'exists:gates,id'],
+            'scan_type' => ['nullable', 'in:entry,exit'],
+        ]);
+
+        $gate = Gate::where('status', 'active')->findOrFail($data['gate_id']);
+        $this->ensureGateAssignment($gate->id, $guard->gate_ids);
+
+        // Check if worker pass is active
+        if (!$worker->isActive()) {
+            return redirect()
+                ->route('guard.scanner')
+                ->with('scanResult', [
+                    'status' => 'error',
+                    'message' => 'Worker pass is not active or parent pass is invalid.',
+                ]);
+        }
+
+        // Admit the worker
+        $worker->admit($gate, $guard);
+
+        // Create a pass scan record for this worker admission
+        PassScan::create([
+            'pass_id' => $worker->pass_id,
+            'gate_id' => $gate->id,
+            'guard_id' => $guard->id,
+            'scan_type' => $data['scan_type'] ?? 'entry',
+            'scan_method' => 'qr',
+            'result' => 'success',
+            'result_message' => "Worker {$worker->worker_name} admitted",
+            'scan_data' => [
+                'worker_id' => $worker->id,
+                'worker_name' => $worker->worker_name,
+            ],
+            'device_id' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+            'location' => null,
+            'was_offline' => false,
+            'scanned_at' => now(),
+        ]);
+
+        // Load the parent pass with all workers to return updated state
+        $pass = Pass::with('workers')->find($worker->pass_id);
+
+        return redirect()
+            ->route('guard.scanner')
+            ->with('scanResult', [
+                'status' => 'success',
+                'message' => "Worker {$worker->worker_name} admitted successfully.",
+                'pass' => [
+                    'id' => $pass->id,
+                    'pass_number' => $pass->pass_number,
+                    'visitor_name' => $pass->visitor_name,
+                    'status' => $pass->status,
+                    'valid_to' => $pass->valid_to,
+                    'uuid' => $pass->uuid,
+                    'pass_mode' => $pass->pass_mode,
+                    'group_size' => $pass->group_size,
+                    'workers' => $pass->workers->map(function ($w) {
+                        return [
+                            'id' => $w->id,
+                            'worker_name' => $w->worker_name,
+                            'worker_contact' => $w->worker_contact,
+                            'worker_email' => $w->worker_email,
+                            'worker_position' => $w->worker_position,
+                            'worker_id_number' => $w->worker_id_number,
+                            'photo_path' => $w->photo_path,
+                            'photo_url' => $w->photo_url,
+                            'qr_code_path' => $w->qr_code_path,
+                            'qr_code_url' => $w->qr_code_url,
+                            'is_admitted' => $w->is_admitted,
+                            'last_scan_at' => $w->last_scan_at,
+                            'total_scans' => $w->total_scans,
+                            'status' => $w->status,
+                        ];
+                    }),
+                ],
+                'gate' => [
+                    'id' => $gate->id,
+                    'name' => $gate->name,
+                ],
             ]);
     }
 

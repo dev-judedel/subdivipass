@@ -232,7 +232,7 @@
                 </button>
             </div>
         </form>
-    </div>
+
         <ConfirmModal
             v-model="showConfirm"
             title="Create this subdivision?"

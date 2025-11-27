@@ -52,6 +52,10 @@ class Pass extends Model
         'scan_count',
         'last_scanned_at',
         'last_scanned_gate_id',
+        'allowed_entry_time_start',
+        'allowed_entry_time_end',
+        'curfew_exempt',
+        'time_restriction_notes',
     ];
 
     /**
@@ -70,6 +74,7 @@ class Pass extends Model
         'last_scanned_at' => 'datetime',
         'scan_count' => 'integer',
         'group_size' => 'integer',
+        'curfew_exempt' => 'boolean',
     ];
 
     /**

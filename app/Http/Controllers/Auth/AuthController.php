@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\LoginActivityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,13 @@ use Inertia\Response;
 
 class AuthController extends Controller
 {
+    protected LoginActivityService $loginActivityService;
+
+    public function __construct(LoginActivityService $loginActivityService)
+    {
+        $this->loginActivityService = $loginActivityService;
+    }
+
     /**
      * Display the login view.
      */
@@ -27,19 +35,32 @@ class AuthController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $request->authenticate($this->loginActivityService);
 
         $request->session()->regenerate();
 
+        $user = Auth::user();
+
         // Update last login information
-        Auth::user()->update([
+        $user->update([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
         ]);
 
-        // Determine redirect based on user role
-        $user = Auth::user();
+        // Log successful login activity
+        $this->loginActivityService->logActivity(
+            $user,
+            $request->email,
+            'success',
+            $request
+        );
 
+        // Check for suspicious login (new device/location)
+        if ($this->loginActivityService->isNewDevice($user, $request->userAgent())) {
+            session()->flash('info', 'Login from a new device detected. If this wasn\'t you, please change your password.');
+        }
+
+        // Determine redirect based on user role
         if ($user->hasRole('super-admin') || $user->hasRole('admin')) {
             return redirect()->intended('/dashboard');
         } elseif ($user->hasRole('guard')) {

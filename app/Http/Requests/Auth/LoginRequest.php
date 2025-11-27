@@ -37,12 +37,23 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(): void
+    public function authenticate($loginActivityService = null): void
     {
-        $this->ensureIsNotRateLimited();
+        $this->ensureIsNotRateLimited($loginActivityService);
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+
+            // Log failed login attempt
+            if ($loginActivityService) {
+                $loginActivityService->logActivity(
+                    null,
+                    $this->email,
+                    'failed',
+                    $this,
+                    'Invalid credentials'
+                );
+            }
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
@@ -51,7 +62,19 @@ class LoginRequest extends FormRequest
 
         // Check if user is active
         if (! Auth::user()->isActive()) {
+            $user = Auth::user();
             Auth::logout();
+
+            // Log failed login (inactive account)
+            if ($loginActivityService) {
+                $loginActivityService->logActivity(
+                    $user,
+                    $this->email,
+                    'failed',
+                    $this,
+                    'Account deactivated'
+                );
+            }
 
             throw ValidationException::withMessages([
                 'email' => 'Your account has been deactivated. Please contact support.',
@@ -66,13 +89,24 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function ensureIsNotRateLimited(): void
+    public function ensureIsNotRateLimited($loginActivityService = null): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        // Log locked out attempt
+        if ($loginActivityService) {
+            $loginActivityService->logActivity(
+                null,
+                $this->email,
+                'locked_out',
+                $this,
+                "Too many attempts. Locked for {$seconds} seconds."
+            );
+        }
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [

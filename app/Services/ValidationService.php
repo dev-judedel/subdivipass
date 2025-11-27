@@ -13,8 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ValidationService
 {
-    public function __construct(private QRService $qrService)
-    {
+    public function __construct(
+        private QRService $qrService,
+        private CurfewService $curfewService
+    ) {
     }
 
     public function validate(array $context): array
@@ -256,6 +258,16 @@ class ValidationService
             return [
                 'status' => 'error',
                 'message' => 'Pass is outside its validity window.',
+            ];
+        }
+
+        // Check curfew and time restrictions
+        $curfewValidation = $this->curfewService->validatePassEntry($pass);
+        if (!$curfewValidation['valid']) {
+            return [
+                'status' => 'error',
+                'message' => $curfewValidation['message'],
+                'code' => $curfewValidation['code'],
             ];
         }
 

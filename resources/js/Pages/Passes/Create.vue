@@ -234,6 +234,9 @@
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Workers List</h2>
                             <p class="text-sm text-gray-600 mt-1">Add workers who will receive individual ID badges with QR codes</p>
+                            <p v-if="form.errors.workers" class="text-sm text-red-600 mt-1">
+                                {{ form.errors.workers }}
+                            </p>
                         </div>
                         <button
                             type="button"
@@ -542,6 +545,126 @@
                     </div>
                 </div>
 
+                <!-- Time Restrictions (Optional) -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">⏰ Time Restrictions (Optional)</h2>
+                    <p class="text-sm text-gray-600 mb-4">Restrict when this pass can be used within the valid dates</p>
+
+                    <div class="space-y-6">
+                        <!-- Allow Anytime Toggle -->
+                        <div class="flex items-center">
+                            <input
+                                v-model="form.allow_anytime"
+                                type="checkbox"
+                                id="allow_anytime"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label for="allow_anytime" class="ml-2 block text-sm font-medium text-gray-700">
+                                Allow Anytime (No time restrictions)
+                            </label>
+                        </div>
+
+                        <!-- Time Restriction Fields -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Allowed Entry Start -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Allowed Entry Start
+                                </label>
+                                <input
+                                    v-model="form.allowed_entry_time_start"
+                                    type="time"
+                                    :disabled="form.allow_anytime"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                                    :class="{ 'border-red-500': form.errors.allowed_entry_time_start }"
+                                />
+                                <p v-if="form.errors.allowed_entry_time_start" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.allowed_entry_time_start }}
+                                </p>
+                            </div>
+
+                            <!-- Allowed Entry End -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Allowed Entry End
+                                </label>
+                                <input
+                                    v-model="form.allowed_entry_time_end"
+                                    type="time"
+                                    :disabled="form.allow_anytime"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                                    :class="{ 'border-red-500': form.errors.allowed_entry_time_end }"
+                                />
+                                <p v-if="form.errors.allowed_entry_time_end" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.allowed_entry_time_end }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Helper Text for Time Fields -->
+                        <div v-if="!form.allow_anytime" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-sm text-blue-800">
+                                <svg class="inline h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                Entry will only be allowed during these hours each day
+                            </p>
+                        </div>
+
+                        <!-- Curfew Exempt -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input
+                                    v-model="form.curfew_exempt"
+                                    type="checkbox"
+                                    id="curfew_exempt"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                            </div>
+                            <div class="ml-3">
+                                <label for="curfew_exempt" class="block text-sm font-medium text-gray-700">
+                                    Curfew Exempt
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    This pass can bypass subdivision curfew hours
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Time Restriction Notes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Notes (Optional)
+                            </label>
+                            <textarea
+                                v-model="form.time_restriction_notes"
+                                rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                :class="{ 'border-red-500': form.errors.time_restriction_notes }"
+                                placeholder="Any additional notes about time restrictions"
+                            ></textarea>
+                            <p v-if="form.errors.time_restriction_notes" class="mt-1 text-sm text-red-600">
+                                {{ form.errors.time_restriction_notes }}
+                            </p>
+                        </div>
+
+                        <!-- Example Info Box -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <svg class="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Example</p>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Pass valid Nov 27-30, time restriction 8 AM - 5 PM = Can only enter between 8 AM and 5 PM on those dates
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Preview -->
                 <div v-if="showPreview" class="bg-white rounded-lg shadow-sm border border-blue-100 p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -750,6 +873,12 @@ const form = useForm({
     notes: '',
     valid_from: '',
     valid_to: '',
+    // Time restriction fields
+    allow_anytime: false,
+    allowed_entry_time_start: null,
+    allowed_entry_time_end: null,
+    curfew_exempt: false,
+    time_restriction_notes: '',
 });
 
 // UI state
@@ -853,15 +982,30 @@ const handlePhotoUpload = (event, index) => {
 };
 
 const openPreview = () => {
+    if (!validateRequired()) {
+        showPreview.value = false;
+        showConfirm.value = false;
+        return;
+    }
+
     showPreview.value = true;
     showConfirm.value = false;
 };
 
 const openConfirmation = () => {
+    if (!validateRequired()) {
+        showConfirm.value = false;
+        return;
+    }
+
     showConfirm.value = true;
 };
 
 const confirmSubmit = () => {
+    if (!validateRequired()) {
+        return;
+    }
+
     form.post(route('passes.store'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -869,5 +1013,51 @@ const confirmSubmit = () => {
             showConfirm.value = false;
         },
     });
+};
+
+const validateRequired = () => {
+    form.clearErrors();
+    let valid = true;
+
+    if (!form.subdivision_id) {
+        form.setError('subdivision_id', 'Subdivision is required');
+        valid = false;
+    }
+
+    if (!form.pass_type_id) {
+        form.setError('pass_type_id', 'Pass type is required');
+        valid = false;
+    }
+
+    if (!form.valid_from) {
+        form.setError('valid_from', 'Valid from date/time is required');
+        valid = false;
+    }
+
+    if (!form.valid_to) {
+        form.setError('valid_to', 'Valid to date/time is required');
+        valid = false;
+    }
+
+    if (form.pass_mode === 'single') {
+        if (!form.visitor_name) {
+            form.setError('visitor_name', 'Visitor name is required');
+            valid = false;
+        }
+    } else if (form.pass_mode === 'group') {
+        if (form.workers.length === 0) {
+            form.setError('workers', 'Add at least one worker');
+            valid = false;
+        }
+
+        form.workers.forEach((worker, index) => {
+            if (!worker.worker_name) {
+                form.setError(`workers.${index}.worker_name`, 'Worker name is required');
+                valid = false;
+            }
+        });
+    }
+
+    return valid;
 };
 </script>

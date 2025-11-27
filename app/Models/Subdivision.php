@@ -28,6 +28,11 @@ class Subdivision extends Model
         'logo_path',
         'status',
         'notes',
+        'curfew_enabled',
+        'curfew_start',
+        'curfew_end',
+        'curfew_exemptions',
+        'curfew_message',
     ];
 
     /**
@@ -37,6 +42,8 @@ class Subdivision extends Model
      */
     protected $casts = [
         'settings' => 'array',
+        'curfew_enabled' => 'boolean',
+        'curfew_exemptions' => 'array',
     ];
 
     /**

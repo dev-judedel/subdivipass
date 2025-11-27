@@ -7,6 +7,172 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Critical Features (Session: 2025-11-27)
+
+- **QR Pass Validity & Curfew System - Complete Implementation**
+  - **Subdivision Curfew Settings:** New fields in subdivisions table for curfew enforcement (curfew_enabled, curfew_start, curfew_end, curfew_exemptions, curfew_message). Supports overnight curfews (e.g., 10 PM to 5 AM).
+  - **Pass Time Restrictions:** New fields in passes table (allowed_entry_time_start/end, curfew_exempt, time_restriction_notes). Allows per-pass time windows within date validity.
+  - **CurfewService:** Comprehensive time validation service with 7 methods - isWithinCurfew(), canUsePassNow(), validatePassEntry(), getCurfewMessage(), getNextAllowedEntryTime(), isPassExemptFromCurfew(), formatTimeRange(). Handles overnight ranges, hierarchical exemptions, user-friendly messages.
+  - **Enhanced ValidationService:** Integrated CurfewService for real-time time validation during QR scans. Returns detailed error codes (success, expired, not_yet_valid, curfew_violation, time_restriction).
+  - **Use Cases:** Block visitors during curfew, exempt delivery passes, restrict contractors to business hours, event-specific time windows, emergency pass exemptions, per-subdivision rules.
+  - **Example:** Pass valid Nov 27-30 with subdivision curfew 10 PM - 5 AM = Entry blocked during curfew hours each night.
+
+- **Enhanced Login Security & Activity Tracking - Complete Implementation**
+  - **Login Activity Tracking:**
+    - New `login_activities` database table with comprehensive tracking
+    - Tracks: user_id, email, type (success/failed/locked_out), IP address, device info
+    - Device fingerprinting: device_type (desktop/mobile/tablet), browser, platform (OS)
+    - Geolocation placeholders: country, city (ready for future integration)
+    - Failure reason logging for security analysis
+    - Indexed for performance (user_id, email, IP address)
+
+  - **LoginActivity Model:**
+    - Full Eloquent model with User relationship
+    - Scopes: successful(), failed(), dateRange()
+    - Helper method: isSuspicious() for detecting anomalies
+    - Automatic timestamps and proper casting
+
+  - **LoginActivityService:**
+    - `logActivity()` - Logs all login attempts (success/failed/locked_out)
+    - `parseUserAgent()` - Intelligent user agent parsing with fallback
+    - `getRecentActivities()` - Retrieve user's login history
+    - `getRecentFailedAttempts()` - Count failed attempts in time window
+    - `isNewDevice()` - Detect logins from new devices
+    - `getStatistics()` - Generate login stats (total, failed, unique IPs/devices)
+    - `cleanOldActivities()` - Auto-cleanup old records (default 90 days)
+    - Dual parsing: Jenssegers\Agent (optional) + regex fallback
+    - Comprehensive error handling and logging
+
+  - **Enhanced AuthController:**
+    - Dependency injection of LoginActivityService
+    - Automatic success login logging after authentication
+    - New device detection with user notification
+    - Session flash message for new device logins
+    - Improved role-based redirects
+
+  - **Enhanced LoginRequest:**
+    - Failed login attempt logging with reason
+    - Inactive account detection and logging
+    - Rate limit exceeded logging (locked_out type)
+    - Service parameter injection for activity tracking
+    - Comprehensive failure reason tracking
+
+  - **Security Features:**
+    - ✅ Failed login attempt tracking per IP
+    - ✅ Rate limiting with lockout logging
+    - ✅ New device detection
+    - ✅ Browser and platform fingerprinting
+    - ✅ Suspicious activity detection
+    - ✅ Comprehensive audit trail
+    - ✅ Inactive account attempt logging
+    - ✅ IP address tracking for all attempts
+
+  - **Future Ready:**
+    - Geolocation fields prepared (country, city)
+    - Email notification hooks for suspicious activity
+    - Statistics API endpoints ready
+    - Device management UI preparation
+    - Session management foundation
+
+- **Password Reset System - Complete Implementation**
+  - **Backend Controllers:**
+    - PasswordResetController with 4 methods: showForgotPasswordForm, sendResetLink, showResetPasswordForm, resetPassword
+    - Full integration with Laravel Password facade
+    - Active user status validation before sending reset links
+    - Token-based reset flow with email verification
+    - Automatic remember_token regeneration on password reset
+
+  - **Form Request Validators:**
+    - ForgotPasswordRequest: Email validation with existence check
+    - ResetPasswordRequest: Token, email, password confirmation validation
+    - Password::min(8) rule for security
+    - Custom error messages for better UX
+
+  - **Frontend Components:**
+    - ForgotPassword.vue: Email input form with "Send Reset Link" button
+    - ResetPassword.vue: Token-based password reset form with confirmation
+    - Matching design with Login.vue (gradient background, professional styling)
+    - Success/error message display
+    - "Back to login" links on both pages
+    - Link added to Login.vue "Forgot your password?"
+
+  - **Email Notifications:**
+    - PasswordResetMail mailable class with markdown template
+    - Professional email template at emails/password-reset.blade.php
+    - Includes reset URL button, expiration notice, security message
+    - Subject: "Reset Your SubdiPass Password"
+    - Branded with SubdiPass Team signature
+
+  - **Routes:**
+    - GET /forgot-password → password.request
+    - POST /forgot-password → password.email
+    - GET /reset-password/{token} → password.reset
+    - POST /reset-password → password.update
+    - All routes in guest middleware group
+
+- **Approval Queue Dashboard - Complete Implementation**
+  - **Backend Controller:**
+    - ApprovalQueueController with 3 methods: index, batchApprove, batchReject
+    - Admin/Super-admin only access (role middleware)
+    - Subdivision-scoped filtering for non-super-admins
+    - Automatic oldest-first ordering (FIFO queue)
+    - Search by pass number, visitor name, contact
+    - Filter by subdivision and pass type
+    - Statistics calculation: total pending, urgent, today's requests
+    - Batch approval/rejection with transaction safety
+    - Individual pass approval/rejection fallback
+    - Comprehensive error handling with success/failure counts
+
+  - **Frontend Component (ApprovalQueue/Index.vue):**
+    - **Dashboard Statistics:**
+      - Total Pending (yellow card)
+      - Urgent Passes (red card with warning icon) - valid_from <= tomorrow
+      - Today's Requests (blue card)
+
+    - **Filter Section:**
+      - Quick search with 500ms debounce
+      - Subdivision dropdown filter
+      - Pass type dropdown filter
+      - Active filter chips with individual/bulk clear
+
+    - **Data Table:**
+      - Bulk selection checkboxes (select all + individual)
+      - Pass Number column with PIN and urgent badge
+      - Requester column (name + email)
+      - Visitor Name column (contact + worker pass badge)
+      - Subdivision, Pass Type columns
+      - Valid From/To with date formatting
+      - Created At timestamp
+      - Individual action buttons (View, Approve, Reject)
+
+    - **Batch Operations:**
+      - "Approve Selected" button (batch approve)
+      - "Reject Selected" button (opens modal)
+      - Selected count display
+      - Clear selection button
+      - Disabled states during processing
+      - Loading indicators
+
+    - **Modal Dialogs:**
+      - Batch reject modal with required reason textarea
+      - Single pass reject modal
+      - Validation for empty reason
+      - Cancel and confirm buttons
+
+    - **Additional Features:**
+      - Urgent pass row highlighting (red background)
+      - Empty state when no pending passes
+      - Full pagination with query preservation
+      - Worker pass detection and badge display
+      - Responsive design (mobile-friendly)
+      - Preserve scroll position after actions
+
+  - **Routes:**
+    - GET /approval-queue → approval-queue.index
+    - POST /approval-queue/batch-approve → approval-queue.batch-approve
+    - POST /approval-queue/batch-reject → approval-queue.batch-reject
+    - All routes protected with 'auth' and 'role:admin|super-admin' middleware
+
 ### Added
 - **Worker Pass System - Complete Implementation**
   - **Pass Mode Selection:**

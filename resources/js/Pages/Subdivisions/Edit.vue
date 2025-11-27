@@ -174,6 +174,72 @@
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">🌙 Curfew Settings</h2>
+                    <span
+                        v-if="form.curfew_enabled && form.curfew_start > form.curfew_end"
+                        class="text-xs font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-3 py-1 rounded-full"
+                    >
+                        Overnight Curfew
+                    </span>
+                </div>
+
+                <label class="flex items-start gap-3">
+                    <input
+                        v-model="form.curfew_enabled"
+                        type="checkbox"
+                        class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>
+                        <span class="font-semibold text-slate-900 block">Enable Curfew</span>
+                        <span class="text-sm text-slate-500">Enforce curfew hours for all passes unless specifically exempted</span>
+                    </span>
+                </label>
+
+                <div v-show="form.curfew_enabled" class="grid gap-6 md:grid-cols-2 pt-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700">Curfew Start Time</label>
+                        <input
+                            v-model="form.curfew_start"
+                            type="time"
+                            class="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm"
+                            :class="{ 'border-red-500': form.errors.curfew_start }"
+                        />
+                        <p v-if="form.errors.curfew_start" class="mt-1 text-sm text-red-600">
+                            {{ form.errors.curfew_start }}
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700">Curfew End Time</label>
+                        <input
+                            v-model="form.curfew_end"
+                            type="time"
+                            class="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm"
+                            :class="{ 'border-red-500': form.errors.curfew_end }"
+                        />
+                        <p v-if="form.errors.curfew_end" class="mt-1 text-sm text-red-600">
+                            {{ form.errors.curfew_end }}
+                        </p>
+                    </div>
+                </div>
+
+                <div v-show="form.curfew_enabled">
+                    <label class="block text-sm font-semibold text-slate-700">Custom Curfew Message</label>
+                    <textarea
+                        v-model="form.curfew_message"
+                        rows="3"
+                        placeholder="e.g., Curfew hours in effect for security purposes"
+                        class="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm"
+                        :class="{ 'border-red-500': form.errors.curfew_message }"
+                    ></textarea>
+                    <p v-if="form.errors.curfew_message" class="mt-1 text-sm text-red-600">
+                        {{ form.errors.curfew_message }}
+                    </p>
+                    <p class="text-xs text-slate-500 mt-1">This message will be displayed when passes are used during curfew hours</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
                 <h2 class="text-lg font-semibold text-slate-900">Guard & Pass Settings</h2>
                 <div class="grid gap-6 md:grid-cols-2">
                     <div class="rounded-xl border border-slate-200 p-4 space-y-4">
@@ -378,6 +444,10 @@ const form = useForm({
     status: props.subdivision.status,
     notes: props.subdivision.notes,
     settings: { ...props.subdivision.settings },
+    curfew_enabled: props.subdivision.curfew_enabled ?? false,
+    curfew_start: props.subdivision.curfew_start ?? '22:00:00',
+    curfew_end: props.subdivision.curfew_end ?? '05:00:00',
+    curfew_message: props.subdivision.curfew_message ?? '',
     logo: null,
     remove_logo: false,
 });

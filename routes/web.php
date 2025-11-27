@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\ApprovalQueueController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\GateGuardAssignmentController;
@@ -54,6 +56,12 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store']);
+
+    // Password Reset Routes
+    Route::get('/forgot-password', [PasswordResetController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update');
 });
 
 // Authenticated routes
@@ -63,6 +71,13 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard - main landing after login
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    // Approval Queue - Admin only
+    Route::middleware('role:admin|super-admin')->group(function () {
+        Route::get('/approval-queue', [ApprovalQueueController::class, 'index'])->name('approval-queue.index');
+        Route::post('/approval-queue/batch-approve', [ApprovalQueueController::class, 'batchApprove'])->name('approval-queue.batch-approve');
+        Route::post('/approval-queue/batch-reject', [ApprovalQueueController::class, 'batchReject'])->name('approval-queue.batch-reject');
+    });
 
     // Guard routes
     Route::prefix('guard')->middleware('role:guard')->group(function () {

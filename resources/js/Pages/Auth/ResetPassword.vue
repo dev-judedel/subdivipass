@@ -5,17 +5,17 @@
             <div class="text-center">
                 <h1 class="text-4xl font-bold text-indigo-600">SubdiPass</h1>
                 <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                    Sign in to your account
+                    Reset your password
                 </h2>
                 <p class="mt-2 text-sm text-gray-600">
-                    Digital Pass Management System
+                    Enter your new password below
                 </p>
             </div>
 
-            <!-- Login Form -->
+            <!-- Reset Password Form -->
             <form class="mt-8 space-y-6 bg-white rounded-lg shadow-md p-8" @submit.prevent="submit">
                 <!-- Error Display -->
-                <div v-if="form.errors.email" class="rounded-md bg-red-50 p-4">
+                <div v-if="form.errors.email || form.errors.password || form.errors.password_confirmation" class="rounded-md bg-red-50 p-4">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -24,13 +24,13 @@
                         </div>
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-red-800">
-                                {{ form.errors.email }}
+                                {{ form.errors.email || form.errors.password || form.errors.password_confirmation }}
                             </h3>
                         </div>
                     </div>
                 </div>
 
-                <!-- Email Field -->
+                <!-- Email Field (readonly) -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">
                         Email address
@@ -42,10 +42,9 @@
                             name="email"
                             type="email"
                             autocomplete="email"
-                            required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            readonly
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 bg-gray-50 sm:text-sm"
                             :class="{ 'border-red-300': form.errors.email }"
-                            placeholder="Enter your email"
                         />
                     </div>
                 </div>
@@ -53,7 +52,7 @@
                 <!-- Password Field -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700">
-                        Password
+                        New Password
                     </label>
                     <div class="mt-1">
                         <input
@@ -61,11 +60,11 @@
                             v-model="form.password"
                             name="password"
                             type="password"
-                            autocomplete="current-password"
+                            autocomplete="new-password"
                             required
                             class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             :class="{ 'border-red-300': form.errors.password }"
-                            placeholder="Enter your password"
+                            placeholder="Enter new password"
                         />
                     </div>
                     <p v-if="form.errors.password" class="mt-2 text-sm text-red-600">
@@ -73,26 +72,27 @@
                     </p>
                 </div>
 
-                <!-- Remember Me -->
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
+                <!-- Password Confirmation Field -->
+                <div>
+                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">
+                        Confirm Password
+                    </label>
+                    <div class="mt-1">
                         <input
-                            id="remember"
-                            v-model="form.remember"
-                            name="remember"
-                            type="checkbox"
-                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            id="password_confirmation"
+                            v-model="form.password_confirmation"
+                            name="password_confirmation"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            :class="{ 'border-red-300': form.errors.password_confirmation }"
+                            placeholder="Confirm new password"
                         />
-                        <label for="remember" class="ml-2 block text-sm text-gray-900">
-                            Remember me
-                        </label>
                     </div>
-
-                    <div class="text-sm">
-                        <Link :href="route('password.request')" class="font-medium text-indigo-600 hover:text-indigo-500">
-                            Forgot your password?
-                        </Link>
-                    </div>
+                    <p v-if="form.errors.password_confirmation" class="mt-2 text-sm text-red-600">
+                        {{ form.errors.password_confirmation }}
+                    </p>
                 </div>
 
                 <!-- Submit Button -->
@@ -116,28 +116,16 @@
                                 />
                             </svg>
                         </span>
-                        <span v-if="form.processing">Signing in...</span>
-                        <span v-else>Sign in</span>
+                        <span v-if="form.processing">Resetting...</span>
+                        <span v-else>Reset Password</span>
                     </button>
                 </div>
 
-                <!-- Test Credentials Info -->
-                <div class="mt-6 border-t border-gray-200 pt-6">
-                    <div class="rounded-md bg-blue-50 p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3 flex-1">
-                                <h3 class="text-sm font-medium text-blue-800">Test Credentials</h3>
-                                <div class="mt-2 text-sm text-blue-700">
-                                    <p class="font-mono text-xs">admin@subdivipass.com / password</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Back to Login Link -->
+                <div class="text-center">
+                    <a href="/login" class="font-medium text-indigo-600 hover:text-indigo-500 text-sm">
+                        Back to login
+                    </a>
                 </div>
             </form>
 
@@ -154,23 +142,32 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 
-defineProps({
-    status: String,
+const props = defineProps({
+    token: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+    },
 });
 
 const form = useForm({
-    email: '',
+    token: props.token,
+    email: props.email,
     password: '',
-    remember: false,
+    password_confirmation: '',
 });
 
 const submit = () => {
-    form.post('/login', {
+    form.post(route('password.update'), {
         preserveState: false,
         preserveScroll: false,
         replace: true,
         onFinish: () => {
             form.password = '';
+            form.password_confirmation = '';
         },
     });
 };

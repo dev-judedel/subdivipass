@@ -61,17 +61,19 @@ class AuthController extends Controller
         }
 
         // Determine redirect based on user role
-        if ($user->hasRole('super-admin') || $user->hasRole('admin')) {
-            return redirect()->intended('/dashboard');
-        } elseif ($user->hasRole('guard')) {
-            return redirect()->intended('/guard/scanner');
+        // Use route names for better reliability
+        if ($user->hasRole('guard')) {
+            return redirect()->route('guard.scanner');
+        } elseif ($user->hasRole('super-admin') || $user->hasRole('admin')) {
+            return redirect()->route('dashboard');
         } elseif ($user->hasRole('employee')) {
-            return redirect()->intended('/passes');
+            return redirect()->route('passes.index');
         } elseif ($user->hasRole('requester')) {
-            return redirect()->intended('/my-passes');
+            return redirect()->route('requester.passes');
         }
 
-        return redirect()->intended('/dashboard');
+        // Default fallback for users without specific roles
+        return redirect()->route('dashboard');
     }
 
     /**

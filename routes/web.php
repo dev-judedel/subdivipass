@@ -32,10 +32,11 @@ Route::get('/', function () {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        if ($user->hasRole('super-admin') || $user->hasRole('admin')) {
-            return redirect()->route('dashboard');
-        } elseif ($user->hasRole('guard')) {
+        // Check guard role first (priority for mobile users)
+        if ($user->hasRole('guard')) {
             return redirect()->route('guard.scanner');
+        } elseif ($user->hasRole('super-admin') || $user->hasRole('admin')) {
+            return redirect()->route('dashboard');
         } elseif ($user->hasRole('employee')) {
             return redirect()->route('passes.index');
         } elseif ($user->hasRole('requester')) {
@@ -69,8 +70,10 @@ Route::middleware(['auth'])->group(function () {
     // Logout
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
-    // Dashboard - main landing after login
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    // Dashboard - restricted to admin, employee, and super-admin only (NOT guards or requesters)
+    Route::get('/dashboard', DashboardController::class)
+        ->name('dashboard')
+        ->middleware('role:admin|super-admin|employee');
 
     // Approval Queue - Admin only
     Route::middleware('role:admin|super-admin')->group(function () {

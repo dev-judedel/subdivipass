@@ -3,6 +3,8 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Auth\Access\AuthorizationException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -25,6 +27,29 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        // Handle role-based authorization exceptions
+        $this->renderable(function (UnauthorizedException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'You do not have the required permissions to access this resource.',
+                ], 403);
+            }
+
+            // For web requests, redirect back with error message
+            return back()->with('error', 'You do not have permission to access this page.');
+        });
+
+        // Handle general authorization exceptions
+        $this->renderable(function (AuthorizationException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'Unauthorized action.',
+                ], 403);
+            }
+
+            return back()->with('error', 'Unauthorized action.');
         });
     }
 }

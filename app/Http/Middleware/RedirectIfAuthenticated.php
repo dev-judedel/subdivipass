@@ -23,11 +23,11 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
-                // Redirect based on user role
-                if ($user?->hasRole('super-admin') || $user?->hasRole('admin')) {
-                    return redirect()->route('dashboard');
-                } elseif ($user?->hasRole('guard')) {
+                // Redirect based on user role (guard first for priority)
+                if ($user?->hasRole('guard')) {
                     return redirect()->route('guard.scanner');
+                } elseif ($user?->hasRole('super-admin') || $user?->hasRole('admin')) {
+                    return redirect()->route('dashboard');
                 } elseif ($user?->hasRole('employee')) {
                     return redirect()->route('passes.index');
                 } elseif ($user?->hasRole('requester')) {
@@ -35,7 +35,7 @@ class RedirectIfAuthenticated
                 }
 
                 // Default fallback
-                return redirect(RouteServiceProvider::HOME);
+                return redirect()->route('dashboard');
             }
         }
 

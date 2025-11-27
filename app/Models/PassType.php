@@ -70,7 +70,7 @@ class PassType extends Model
      */
     public function passes()
     {
-        return $this->hasMany(Pass::class, 'type_id');
+        return $this->hasMany(Pass::class, 'pass_type_id');
     }
 
     /**
